@@ -127,6 +127,9 @@
             <!-- Leaves Tab -->
             <div id="leaves-content" class="tab-content">
                  <div class="flex justify-end mb-6 space-x-3">
+                    <button id="clearAllLeavesBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg shadow-md text-sm transition-transform transform hover:scale-105">
+                        <i class="fas fa-trash-alt mr-2"></i>Clear All
+                    </button>
                     <button id="exportLeavesBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md text-sm transition-transform transform hover:scale-105">
                         <i class="fas fa-file-excel mr-2"></i>Export Month
                     </button>
@@ -364,6 +367,7 @@
             document.getElementById('exportExcelBtn').addEventListener('click', exportToExcel);
             document.getElementById('exportLeavesBtn').addEventListener('click', exportLeavesToExcel);
             document.getElementById('leaveCalendar').addEventListener('click', handleCalendarClick);
+            document.getElementById('clearAllLeavesBtn').addEventListener('click', handleClearAllLeaves);
         }
         
         // --- Modal Controls ---
@@ -686,6 +690,35 @@
                         showAlert("Delete Error", "Failed to delete leave entry.");
                     }
                 }
+            }
+        }
+
+        async function handleClearAllLeaves() {
+            if (!confirm('Are you sure you want to delete ALL leave entries for the current month? This action cannot be undone.')) {
+                return;
+            }
+
+            const month = currentCalendarDate.getMonth();
+            const year = currentCalendarDate.getFullYear();
+
+            const leavesInMonth = allLeaves.filter(leave => {
+                const startDate = new Date(leave.startDate.replace(/-/g, '\/'));
+                return startDate.getMonth() === month && startDate.getFullYear() === year;
+            });
+
+            if (leavesInMonth.length === 0) {
+                showAlert("No Data", "There are no leave plans in the current month to delete.");
+                return;
+            }
+
+            const deletePromises = leavesInMonth.map(leave => deleteDoc(doc(getLeavesCollection(), leave.id)));
+
+            try {
+                await Promise.all(deletePromises);
+                showAlert("Success", "All leave entries for the month have been deleted.");
+            } catch (error) {
+                console.error("Error deleting all leaves:", error);
+                showAlert("Error", "Could not delete all leave entries.");
             }
         }
 
