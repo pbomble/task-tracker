@@ -885,14 +885,17 @@
         function toggleLeaveUserSelection() {
             const reason = document.getElementById('leaveReason').value;
             const singleUserContainer = document.getElementById('leaveUserContainer');
+            const singleUserSelect = document.getElementById('leaveUser');
             const multiUserContainer = document.getElementById('leaveUserMultiContainer');
             
             if (reason === 'MEP_holiday') {
                 singleUserContainer.classList.add('hidden');
+                singleUserSelect.disabled = true;
                 multiUserContainer.classList.remove('hidden');
                 populateLeaveUserCheckboxes();
             } else {
                 singleUserContainer.classList.remove('hidden');
+                singleUserSelect.disabled = false;
                 multiUserContainer.classList.add('hidden');
             }
         }
