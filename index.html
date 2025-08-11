@@ -53,6 +53,7 @@
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
+        /* This rule is now handled by Tailwind's group-hover utility, but is kept for reference */
         .leave-entry:hover .leave-actions {
             opacity: 1;
         }
@@ -336,7 +337,8 @@
             db = getFirestore(app);
         } catch (e) {
             console.error("Firebase initialization failed. Please check your firebaseConfig.", e);
-            alert("Configuration Error: Could not initialize the database. Please check the Firebase configuration in the HTML file.");
+            // Using custom alert instead of window.alert
+            showAlert("Configuration Error", "Could not initialize the database. Please check the Firebase configuration in the HTML file.");
         }
 
         // --- Global State ---
@@ -374,6 +376,7 @@
         }
 
         function editUserId() {
+            // Using a custom modal for this would be better, but prompt is used for simplicity
             const newUserId = prompt("Enter your name or a new User ID:", currentUserId);
             if (newUserId && newUserId.trim() !== "") {
                 currentUserId = newUserId.trim();
@@ -631,9 +634,12 @@
                 if (action === 'edit') {
                     const taskSnap = await getDoc(doc(getTasksCollection(), taskId));
                     if (taskSnap.exists()) openTaskModal({ id: taskSnap.id, ...taskSnap.data() });
-                } else if (action === 'delete' && confirm('Are you sure you want to delete this task?')) {
-                    try { await deleteDoc(doc(getTasksCollection(), taskId)); } 
-                    catch (error) { showAlert("Delete Error", "Failed to delete task."); }
+                } else if (action === 'delete') {
+                    // Using a custom confirmation modal would be better
+                    if (confirm('Are you sure you want to delete this task?')) {
+                        try { await deleteDoc(doc(getTasksCollection(), taskId)); } 
+                        catch (error) { showAlert("Delete Error", "Failed to delete task."); }
+                    }
                 }
             });
         }
@@ -758,7 +764,10 @@
             leavesUnsubscribe = onSnapshot(q, (snapshot) => {
                 allLeaves = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 renderCalendar();
-                updateWeekView(); // Re-render task grid when leaves change
+                // Re-render task grid to reflect leave changes
+                if (document.getElementById('tasks-content').classList.contains('active')) {
+                    updateWeekView();
+                }
             }, (error) => { console.error("Error fetching leaves:", error); });
         }
 
@@ -775,24 +784,22 @@
             for (let i = 0; i < firstDayOfMonth; i++) calendarEl.innerHTML += '<div></div>';
             for (let day = 1; day <= daysInMonth; day++) {
                 const dayEl = document.createElement('div');
-                dayEl.className = 'calendar-day border border-slate-200 rounded-lg p-1 text-left relative';
+                dayEl.className = 'calendar-day border border-slate-200 rounded-lg p-1 text-left relative min-h-[80px]';
                 const date = new Date(year, month, day);
                 const leavesOnThisDay = (allLeaves || []).filter(l => new Date(l.startDate.replace(/-/g, '\/')) <= date && date <= new Date(l.endDate.replace(/-/g, '\/')));
                 let dayContent = `<div class="text-sm font-semibold text-slate-700 text-right pr-2 pt-1">${day}</div>`;
                 if (leavesOnThisDay.length > 0) {
                     dayContent += '<div class="mt-1 space-y-1 px-1">';
                     leavesOnThisDay.forEach(leave => {
-                        let actions = '';
-                        if (leave.userId === currentUserId || teamMembers.find(m => m.name === currentUserId)) {
-                             actions = `
-                                <div class="leave-actions absolute top-1 right-1 flex space-x-1 opacity-0 transition-opacity">
-                                    <button data-action="edit-leave" data-id="${leave.id}" class="text-slate-400 hover:text-indigo-600"><i class="fas fa-pencil-alt fa-xs pointer-events-none"></i></button>
-                                    <button data-action="delete-leave" data-id="${leave.id}" class="text-slate-400 hover:text-red-600"><i class="fas fa-trash-alt fa-xs pointer-events-none"></i></button>
-                                </div>
-                            `;
-                        }
+                        // Action buttons for edit and delete
+                        const actions = `
+                            <div class="leave-actions absolute top-1 right-1 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button data-action="edit-leave" data-id="${leave.id}" class="text-slate-400 hover:text-indigo-600"><i class="fas fa-pencil-alt fa-xs pointer-events-none"></i></button>
+                                <button data-action="delete-leave" data-id="${leave.id}" class="text-slate-400 hover:text-red-600"><i class="fas fa-trash-alt fa-xs pointer-events-none"></i></button>
+                            </div>
+                        `;
                         dayContent += `
-                            <div class="leave-entry relative text-xs bg-teal-100 text-teal-800 p-1 rounded" title="${leave.reason} - ${leave.userId}">
+                            <div class="leave-entry group relative text-xs bg-teal-100 text-teal-800 p-1 rounded" title="${leave.reason} - ${leave.userId}">
                                 <i class="fas fa-user-clock mr-1"></i>${leave.userId}: ${leave.reason}
                                 ${actions}
                             </div>
@@ -848,7 +855,8 @@
                     endDate, 
                     updatedAt: new Date().toISOString() 
                 };
-                if (leaveId && usersToApplyLeave.length === 1) { // Only update if it's a single user edit
+                // Only update if it's a single user edit. For MEP_holiday, we add new entries.
+                if (leaveId && usersToApplyLeave.length === 1 && reason !== 'MEP_holiday') {
                     return updateDoc(doc(getLeavesCollection(), leaveId), leaveData);
                 } else {
                     leaveData.createdAt = new Date().toISOString();
@@ -1020,3 +1028,4 @@
     </script>
 </body>
 </html>
+```
