@@ -86,7 +86,7 @@
             <div class="border-b border-slate-200">
                 <nav class="-mb-px flex space-x-6" aria-label="Tabs">
                     <button class="tab-button active-tab group inline-flex items-center py-4 px-1 border-b-2 font-semibold text-sm text-indigo-600 border-indigo-500" data-tab="tasks">
-                        <i class="fas fa-table-list mr-2 text-indigo-500"></i>Weekly Tasks
+                        <i class="fas fa-table-list mr-2 text-indigo-500"></i>Weekly Tasks <span id="taskLockIcon"></span>
                     </button>
                     <button class="tab-button group inline-flex items-center py-4 px-1 border-b-2 font-semibold text-sm text-slate-500 border-transparent hover:text-slate-700 hover:border-slate-300" data-tab="leaves">
                         <i class="fas fa-calendar-alt mr-2 text-slate-400 group-hover:text-slate-500"></i>Leave Planner
@@ -171,12 +171,18 @@
                          <label for="taskCategory" class="block text-slate-600 text-sm font-bold mb-2">Category</label>
                         <select id="taskCategory" class="shadow-sm border border-slate-300 rounded-lg w-full py-2 px-3 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500">
                             <option>Task</option>
-                            <option>Automation</option>
+                            <option>Meeting</option>
                             <option>New TCs</option>
                             <option>Rework TCs</option>
-                            <option>Meeting</option>
+                            <option>New Script/Automation</option>
+                            <option>Rework Script/Automation</option>
+                            <option>Req Analysis</option>
                         </select>
                     </div>
+                </div>
+                <div id="taskCountContainer" class="mb-5 hidden">
+                    <label for="taskCount" class="block text-slate-600 text-sm font-bold mb-2">Count</label>
+                    <input type="number" id="taskCount" class="shadow-sm appearance-none border border-slate-300 rounded-lg w-full py-2 px-3 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                     <div>
@@ -227,9 +233,29 @@
             <h2 id="leaveModalTitle" class="text-2xl font-bold mb-6 text-slate-800">Plan Leave</h2>
             <form id="leaveForm">
                 <input type="hidden" id="leaveId">
-                <div class="mb-5">
-                    <label for="leaveReason" class="block text-slate-600 text-sm font-bold mb-2">Reason (e.g., Vacation, Sick Leave)</label>
-                    <input type="text" id="leaveReason" class="shadow-sm appearance-none border border-slate-300 rounded-lg w-full py-2 px-3 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-teal-500" required>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+                     <div id="leaveUserContainer">
+                        <label for="leaveUser" class="block text-slate-600 text-sm font-bold mb-2">Team Member</label>
+                        <select id="leaveUser" class="shadow-sm appearance-none border border-slate-300 rounded-lg w-full py-2 px-3 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-teal-500" required>
+                           <!-- Options will be populated by JS -->
+                        </select>
+                    </div>
+                    <div id="leaveUserMultiContainer" class="hidden">
+                        <label class="block text-slate-600 text-sm font-bold mb-2">Team Members</label>
+                        <div id="leaveUserCheckboxes" class="max-h-24 overflow-y-auto border border-slate-300 rounded-lg p-2 space-y-1">
+                            <!-- Checkboxes will be populated by JS -->
+                        </div>
+                    </div>
+                    <div>
+                        <label for="leaveReason" class="block text-slate-600 text-sm font-bold mb-2">Reason</label>
+                        <select id="leaveReason" class="shadow-sm appearance-none border border-slate-300 rounded-lg w-full py-2 px-3 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-teal-500" required>
+                            <option>Planned Leave</option>
+                            <option>Sick Leave</option>
+                            <option>Emergency Leave</option>
+                            <option>Medical Leave</option>
+                            <option>MEP_holiday</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                     <div>
@@ -249,6 +275,24 @@
         </div>
     </div>
     
+    <!-- Password Modal -->
+    <div id="passwordModal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-2xl p-8 w-full max-w-sm m-4 transform transition-transform scale-95">
+            <h2 class="text-2xl font-bold mb-4 text-slate-800">Authentication Required</h2>
+            <p class="text-slate-500 mb-6 text-sm">Please enter the password to modify tasks.</p>
+            <form id="passwordForm">
+                <div class="mb-4">
+                    <label for="passwordInput" class="block text-slate-600 text-sm font-bold mb-2">Password</label>
+                    <input type="password" id="passwordInput" class="shadow-sm appearance-none border border-slate-300 rounded-lg w-full py-2 px-3 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                </div>
+                <div class="flex items-center justify-end space-x-3 mt-6">
+                    <button type="button" id="cancelPassword" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 px-4 rounded-lg transition-colors">Cancel</button>
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">Unlock</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Custom Alert Modal -->
     <div id="alertModal" class="modal fixed inset-0 bg-black bg-opacity-60 items-center justify-center z-50 p-4">
         <div class="bg-white rounded-xl shadow-2xl p-8 w-full max-w-sm m-4 text-center transform transition-transform scale-95">
@@ -304,6 +348,8 @@
         let currentCalendarDate = new Date();
         let weeklyTasks = []; 
         let allLeaves = [];
+        let tasksUnlocked = false;
+        let passwordPromiseResolve = null;
         
         // --- App Initialization ---
         document.addEventListener('DOMContentLoaded', () => {
@@ -313,6 +359,7 @@
             loadTeamMembers();
             updateWeekView();
             loadLeaves();
+            updateLockIcon();
         });
 
         // --- User Initialization ---
@@ -348,7 +395,7 @@
         function setupEventListeners() {
             document.getElementById('editUserIdBtn').addEventListener('click', editUserId);
             document.querySelectorAll('.tab-button').forEach(button => button.addEventListener('click', () => switchTab(button.dataset.tab)));
-            document.getElementById('addTaskBtn').addEventListener('click', () => openTaskModal(null));
+            document.getElementById('addTaskBtn').addEventListener('click', () => performProtectedTaskAction(() => openTaskModal(null)));
             document.getElementById('addLeaveBtn').addEventListener('click', () => openLeaveModal(null));
             document.getElementById('manageTeamBtn').addEventListener('click', () => openModal('team'));
             document.getElementById('cancelTask').addEventListener('click', () => closeModal('task'));
@@ -368,8 +415,64 @@
             document.getElementById('exportLeavesBtn').addEventListener('click', exportLeavesToExcel);
             document.getElementById('leaveCalendar').addEventListener('click', handleCalendarClick);
             document.getElementById('clearAllLeavesBtn').addEventListener('click', handleClearAllLeaves);
+            document.getElementById('taskCategory').addEventListener('change', toggleTaskCount);
+            document.getElementById('passwordForm').addEventListener('submit', handlePasswordSubmit);
+            document.getElementById('cancelPassword').addEventListener('click', handlePasswordCancel);
+            document.getElementById('leaveReason').addEventListener('change', toggleLeaveUserSelection);
         }
         
+        // --- Password Check ---
+        function promptForPassword() {
+            return new Promise((resolve) => {
+                passwordPromiseResolve = resolve;
+                openModal('password');
+                document.getElementById('passwordInput').focus();
+            });
+        }
+
+        function handlePasswordSubmit(e) {
+            e.preventDefault();
+            const password = "himik";
+            const enteredPassword = document.getElementById('passwordInput').value;
+            if (enteredPassword === password) {
+                if (passwordPromiseResolve) passwordPromiseResolve(true);
+                closeModal('password');
+                document.getElementById('passwordInput').value = '';
+            } else {
+                showAlert("Access Denied", "Incorrect password.");
+                document.getElementById('passwordInput').value = '';
+                document.getElementById('passwordInput').focus();
+            }
+        }
+
+        function handlePasswordCancel() {
+            if (passwordPromiseResolve) passwordPromiseResolve(false);
+            closeModal('password');
+            document.getElementById('passwordInput').value = '';
+        }
+
+        async function performProtectedTaskAction(callback) {
+            if (tasksUnlocked) {
+                callback();
+                return;
+            }
+            const passwordCorrect = await promptForPassword();
+            if (passwordCorrect) {
+                tasksUnlocked = true;
+                updateLockIcon();
+                callback();
+            }
+        }
+
+        function updateLockIcon() {
+            const iconEl = document.getElementById('taskLockIcon');
+            if (tasksUnlocked) {
+                iconEl.innerHTML = `<i class="fas fa-unlock-alt ml-2 text-green-500"></i>`;
+            } else {
+                iconEl.innerHTML = `<i class="fas fa-lock ml-2 text-slate-400"></i>`;
+            }
+        }
+
         // --- Modal Controls ---
         function openModal(type) {
             const modal = document.getElementById(`${type}Modal`);
@@ -419,47 +522,76 @@
         }
 
         // --- Task Management ---
+        function toggleTaskCount() {
+            const category = document.getElementById('taskCategory').value;
+            const countContainer = document.getElementById('taskCountContainer');
+            const categoriesWithCount = ['New TCs', 'Rework TCs', 'New Script/Automation', 'Rework Script/Automation', 'Req Analysis'];
+            if (categoriesWithCount.includes(category)) {
+                countContainer.classList.remove('hidden');
+            } else {
+                countContainer.classList.add('hidden');
+            }
+        }
+
         function loadTasksForWeek(startDate, endDate) {
             if (tasksUnsubscribe) tasksUnsubscribe();
             const q = query(getTasksCollection(), where("taskDate", ">=", formatDate(startDate)), where("taskDate", "<=", formatDate(endDate)));
             tasksUnsubscribe = onSnapshot(q, (snapshot) => {
                 weeklyTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                renderTaskGrid(weeklyTasks, startDate);
+                renderTaskGrid(weeklyTasks, allLeaves, startDate);
             }, (error) => { console.error("Error fetching tasks:", error); showAlert("Data Error", "Could not load tasks. Check your Firebase configuration and security rules."); });
         }
 
-        function renderTaskGrid(tasks, weekStartDate) {
+        function renderTaskGrid(tasks, leaves, weekStartDate) {
             taskGrid.innerHTML = '';
             const tasksByAssignee = tasks.reduce((acc, task) => { (acc[task.assignee || 'Unassigned'] = acc[task.assignee || 'Unassigned'] || []).push(task); return acc; }, {});
-            const assignees = Object.keys(tasksByAssignee).sort();
+            const assignees = [...new Set([...Object.keys(tasksByAssignee), ...teamMembers.map(m => m.name)])].sort();
+            
             document.getElementById('no-tasks-message').style.display = assignees.length === 0 ? 'block' : 'none';
             taskGrid.parentElement.style.display = assignees.length > 0 ? 'block' : 'none';
+            
             let headerHtml = '<div class="grid-header assignee-cell bg-slate-50 p-3 text-sm font-semibold text-slate-600 text-left border-slate-200">Assignee</div>';
             const days = Array.from({ length: 7 }, (_, i) => new Date(weekStartDate.getFullYear(), weekStartDate.getMonth(), weekStartDate.getDate() + i));
             days.forEach(day => { headerHtml += `<div class="grid-header bg-slate-50 p-3 text-sm font-semibold text-slate-600 text-center border-slate-200">${day.toLocaleDateString('en-US', { weekday: 'short' })}<br><span class="font-normal text-slate-500">${day.getDate()}</span></div>`; });
             taskGrid.innerHTML = headerHtml;
+
             assignees.forEach(assignee => {
                 let rowHtml = `<div class="assignee-cell bg-white p-3 font-semibold text-slate-700 border-b border-r border-slate-200">${assignee}</div>`;
                 days.forEach(day => {
                     const dayString = formatDate(day);
-                    const tasksForDay = (tasksByAssignee[assignee] || []).filter(t => t.taskDate === dayString);
-                    rowHtml += `<div class="p-2 border-b border-slate-200 space-y-2">`;
-                    tasksForDay.forEach(task => {
-                        const statusColors = {"To Do": "border-amber-400", "In Progress": "border-blue-400", "Done": "border-green-400"};
-                        rowHtml += `
-                            <div class="task-card group bg-white p-3 rounded-lg shadow-sm border-l-4 ${statusColors[task.status]}" data-id="${task.id}">
-                                <div class="flex justify-between items-center mb-1">
-                                    <span class="text-xs font-semibold text-slate-500">${task.category}</span>
-                                    <div class="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button data-action="edit" class="text-slate-400 hover:text-indigo-600"><i class="fas fa-pencil-alt fa-xs pointer-events-none"></i></button>
-                                        <button data-action="delete" class="text-slate-400 hover:text-red-600"><i class="fas fa-trash-alt fa-xs pointer-events-none"></i></button>
+                    const leaveForDay = (leaves || []).find(l => l.userId === assignee && new Date(l.startDate.replace(/-/g, '\/')) <= day && day <= new Date(l.endDate.replace(/-/g, '\/')));
+                    
+                    if (leaveForDay) {
+                        const leaveColors = {
+                            "Planned Leave": "bg-blue-100 text-blue-800",
+                            "Sick Leave": "bg-orange-100 text-orange-800",
+                            "Emergency Leave": "bg-violet-100 text-violet-800",
+                            "Medical Leave": "bg-green-100 text-green-800",
+                            "MEP_holiday": "bg-yellow-100 text-yellow-800"
+                        };
+                        const colorClasses = leaveColors[leaveForDay.reason] || 'bg-gray-100 text-gray-800';
+                        rowHtml += `<div class="p-3 border-b border-slate-200 ${colorClasses} flex items-center justify-center text-sm font-semibold"><i class="fas fa-user-clock mr-2"></i> ${leaveForDay.reason}</div>`;
+                    } else {
+                        const tasksForDay = (tasksByAssignee[assignee] || []).filter(t => t.taskDate === dayString);
+                        rowHtml += `<div class="p-2 border-b border-slate-200 space-y-2">`;
+                        tasksForDay.forEach(task => {
+                            const statusColors = {"To Do": "border-amber-400", "In Progress": "border-blue-400", "Done": "border-green-400"};
+                            const countDisplay = task.count ? ` (${task.count})` : '';
+                            rowHtml += `
+                                <div class="task-card group bg-white p-3 rounded-lg shadow-sm border-l-4 ${statusColors[task.status]}" data-id="${task.id}">
+                                    <div class="flex justify-between items-center mb-1">
+                                        <span class="text-xs font-semibold text-slate-500">${task.category}</span>
+                                        <div class="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button data-action="edit" class="text-slate-400 hover:text-indigo-600"><i class="fas fa-pencil-alt fa-xs pointer-events-none"></i></button>
+                                            <button data-action="delete" class="text-slate-400 hover:text-red-600"><i class="fas fa-trash-alt fa-xs pointer-events-none"></i></button>
+                                        </div>
                                     </div>
+                                    <p class="text-sm font-medium text-slate-800">${task.description}${countDisplay}</p>
                                 </div>
-                                <p class="text-sm font-medium text-slate-800">${task.description}</p>
-                            </div>
-                        `;
-                    });
-                    rowHtml += `</div>`;
+                            `;
+                        });
+                        rowHtml += `</div>`;
+                    }
                 });
                 taskGrid.innerHTML += rowHtml;
             });
@@ -469,7 +601,16 @@
             e.preventDefault();
             if (!currentUserId) return showAlert("Error", "Could not identify user.");
             const taskId = document.getElementById('taskId').value;
-            const taskData = { description: document.getElementById('taskDescription').value, assignee: document.getElementById('taskAssignee').value, status: document.getElementById('taskStatus').value, taskDate: document.getElementById('taskDate').value, category: document.getElementById('taskCategory').value, updatedBy: currentUserId, updatedAt: new Date().toISOString() };
+            const taskData = { 
+                description: document.getElementById('taskDescription').value, 
+                assignee: document.getElementById('taskAssignee').value, 
+                status: document.getElementById('taskStatus').value, 
+                taskDate: document.getElementById('taskDate').value, 
+                category: document.getElementById('taskCategory').value, 
+                count: document.getElementById('taskCount').value || null,
+                updatedBy: currentUserId, 
+                updatedAt: new Date().toISOString() 
+            };
             try {
                 if (taskId) await updateDoc(doc(getTasksCollection(), taskId), taskData);
                 else await addDoc(getTasksCollection(), { ...taskData, createdBy: currentUserId, createdAt: new Date().toISOString() });
@@ -482,15 +623,19 @@
             if (!button) return;
             const taskCard = button.closest('[data-id]');
             if (!taskCard) return;
+
             const action = button.dataset.action;
             const taskId = taskCard.dataset.id;
-            if (action === 'edit') {
-                const taskSnap = await getDoc(doc(getTasksCollection(), taskId));
-                if (taskSnap.exists()) openTaskModal({ id: taskSnap.id, ...taskSnap.data() });
-            } else if (action === 'delete' && confirm('Are you sure you want to delete this task?')) {
-                try { await deleteDoc(doc(getTasksCollection(), taskId)); } 
-                catch (error) { showAlert("Delete Error", "Failed to delete task."); }
-            }
+            
+            performProtectedTaskAction(async () => {
+                if (action === 'edit') {
+                    const taskSnap = await getDoc(doc(getTasksCollection(), taskId));
+                    if (taskSnap.exists()) openTaskModal({ id: taskSnap.id, ...taskSnap.data() });
+                } else if (action === 'delete' && confirm('Are you sure you want to delete this task?')) {
+                    try { await deleteDoc(doc(getTasksCollection(), taskId)); } 
+                    catch (error) { showAlert("Delete Error", "Failed to delete task."); }
+                }
+            });
         }
 
         function openTaskModal(task = null) {
@@ -504,6 +649,8 @@
             document.getElementById('taskStatus').value = task ? task.status : 'To Do';
             document.getElementById('taskDate').value = task ? task.taskDate : formatDate(new Date());
             document.getElementById('taskCategory').value = task ? task.category : 'Task';
+            document.getElementById('taskCount').value = task ? task.count : '';
+            toggleTaskCount(); // Show/hide count field based on category
             openModal('task');
         }
         
@@ -513,6 +660,7 @@
             onSnapshot(q, (snapshot) => {
                 teamMembers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 populateAssigneeDropdown();
+                populateLeaveUserDropdown();
                 renderTeamList();
             });
         }
@@ -528,6 +676,19 @@
                 assigneeSelect.appendChild(option);
             });
             assigneeSelect.value = teamMembers.some(m => m.name === currentVal) ? currentVal : currentUserId;
+        }
+        
+        function populateLeaveUserDropdown() {
+            const userSelect = document.getElementById('leaveUser');
+            const currentVal = userSelect.value;
+            userSelect.innerHTML = '<option value="">Select Member</option>';
+            teamMembers.forEach(member => {
+                const option = document.createElement('option');
+                option.value = member.name;
+                option.textContent = member.name;
+                userSelect.appendChild(option);
+            });
+             userSelect.value = teamMembers.some(m => m.name === currentVal) ? currentVal : currentUserId;
         }
 
         function renderTeamList() {
@@ -597,6 +758,7 @@
             leavesUnsubscribe = onSnapshot(q, (snapshot) => {
                 allLeaves = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 renderCalendar();
+                updateWeekView(); // Re-render task grid when leaves change
             }, (error) => { console.error("Error fetching leaves:", error); });
         }
 
@@ -621,7 +783,7 @@
                     dayContent += '<div class="mt-1 space-y-1 px-1">';
                     leavesOnThisDay.forEach(leave => {
                         let actions = '';
-                        if (leave.userId === currentUserId) {
+                        if (leave.userId === currentUserId || teamMembers.find(m => m.name === currentUserId)) {
                              actions = `
                                 <div class="leave-actions absolute top-1 right-1 flex space-x-1 opacity-0 transition-opacity">
                                     <button data-action="edit-leave" data-id="${leave.id}" class="text-slate-400 hover:text-indigo-600"><i class="fas fa-pencil-alt fa-xs pointer-events-none"></i></button>
@@ -646,29 +808,56 @@
         function openLeaveModal(leave = null) {
             const form = document.getElementById('leaveForm');
             form.reset();
+            populateLeaveUserDropdown();
             document.getElementById('leaveModalTitle').textContent = leave ? 'Edit Leave Plan' : 'Plan Leave';
             document.getElementById('leaveId').value = leave ? leave.id : '';
-            document.getElementById('leaveReason').value = leave ? leave.reason : '';
+            document.getElementById('leaveUser').value = leave ? leave.userId : currentUserId;
+            document.getElementById('leaveReason').value = leave ? leave.reason : 'Planned Leave';
             document.getElementById('leaveStartDate').value = leave ? leave.startDate : formatDate(new Date());
             document.getElementById('leaveEndDate').value = leave ? leave.endDate : formatDate(new Date());
+            toggleLeaveUserSelection();
             openModal('leave');
         }
 
         async function handleLeaveFormSubmit(e) {
             e.preventDefault();
-            if (!currentUserId) return showAlert("Error", "Could not identify user.");
             const leaveId = document.getElementById('leaveId').value;
             const startDate = document.getElementById('leaveStartDate').value;
             const endDate = document.getElementById('leaveEndDate').value;
+            const reason = document.getElementById('leaveReason').value;
+
             if (new Date(endDate) < new Date(startDate)) return showAlert("Invalid Dates", "End date cannot be before start date.");
-            const leaveData = { reason: document.getElementById('leaveReason').value, startDate, endDate, userId: currentUserId, updatedAt: new Date().toISOString() };
-            try {
-                if (leaveId) {
-                    await updateDoc(doc(getLeavesCollection(), leaveId), leaveData);
+            
+            const usersToApplyLeave = [];
+            if (reason === 'MEP_holiday') {
+                document.querySelectorAll('#leaveUserCheckboxes input:checked').forEach(checkbox => {
+                    usersToApplyLeave.push(checkbox.value);
+                });
+                if (usersToApplyLeave.length === 0) {
+                    return showAlert("No Selection", "Please select at least one team member for the holiday.");
+                }
+            } else {
+                usersToApplyLeave.push(document.getElementById('leaveUser').value);
+            }
+
+            const leavePromises = usersToApplyLeave.map(userId => {
+                const leaveData = { 
+                    reason, 
+                    userId,
+                    startDate, 
+                    endDate, 
+                    updatedAt: new Date().toISOString() 
+                };
+                if (leaveId && usersToApplyLeave.length === 1) { // Only update if it's a single user edit
+                    return updateDoc(doc(getLeavesCollection(), leaveId), leaveData);
                 } else {
                     leaveData.createdAt = new Date().toISOString();
-                    await addDoc(getLeavesCollection(), leaveData);
+                    return addDoc(getLeavesCollection(), leaveData);
                 }
+            });
+
+            try {
+                await Promise.all(leavePromises);
                 closeModal('leave');
             } catch (error) { showAlert("Save Error", "Failed to save leave plan."); }
         }
@@ -691,6 +880,35 @@
                     }
                 }
             }
+        }
+        
+        function toggleLeaveUserSelection() {
+            const reason = document.getElementById('leaveReason').value;
+            const singleUserContainer = document.getElementById('leaveUserContainer');
+            const multiUserContainer = document.getElementById('leaveUserMultiContainer');
+            
+            if (reason === 'MEP_holiday') {
+                singleUserContainer.classList.add('hidden');
+                multiUserContainer.classList.remove('hidden');
+                populateLeaveUserCheckboxes();
+            } else {
+                singleUserContainer.classList.remove('hidden');
+                multiUserContainer.classList.add('hidden');
+            }
+        }
+        
+        function populateLeaveUserCheckboxes() {
+            const container = document.getElementById('leaveUserCheckboxes');
+            container.innerHTML = '';
+            teamMembers.forEach(member => {
+                const checkboxDiv = document.createElement('div');
+                checkboxDiv.className = 'flex items-center';
+                checkboxDiv.innerHTML = `
+                    <input id="user-${member.id}" type="checkbox" value="${member.name}" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                    <label for="user-${member.id}" class="ml-2 block text-sm text-gray-900">${member.name}</label>
+                `;
+                container.appendChild(checkboxDiv);
+            });
         }
 
         async function handleClearAllLeaves() {
@@ -723,21 +941,34 @@
         }
 
         function exportToExcel() {
-            if (weeklyTasks.length === 0) return showAlert("No Data", "No tasks to export.");
+            if (weeklyTasks.length === 0 && allLeaves.length === 0) return showAlert("No Data", "No tasks or leaves to export.");
+            
             const tasksByAssignee = weeklyTasks.reduce((acc, task) => { (acc[task.assignee || 'Unassigned'] = acc[task.assignee || 'Unassigned'] || []).push(task); return acc; }, {});
-            const assignees = Object.keys(tasksByAssignee).sort();
+            const assignees = [...new Set([...Object.keys(tasksByAssignee), ...teamMembers.map(m => m.name)])].sort();
+
             const header = ["Assignee"];
             const days = Array.from({ length: 7 }, (_, i) => new Date(currentWeekStartDate.getFullYear(), currentWeekStartDate.getMonth(), currentWeekStartDate.getDate() + i));
             days.forEach(day => header.push(day.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })));
+            
             const data = assignees.map(assignee => {
                 const row = [assignee];
                 days.forEach(day => {
                     const dayString = formatDate(day);
-                    const tasksForDay = (tasksByAssignee[assignee] || []).filter(t => t.taskDate === dayString).map(t => `[${t.category}] ${t.description} (${t.status})`).join("\n");
-                    row.push(tasksForDay);
+                    const leaveForDay = (allLeaves || []).find(l => l.userId === assignee && new Date(l.startDate.replace(/-/g, '\/')) <= day && day <= new Date(l.endDate.replace(/-/g, '\/')));
+                    
+                    if(leaveForDay) {
+                        row.push(leaveForDay.reason);
+                    } else {
+                        const tasksForDay = (tasksByAssignee[assignee] || []).filter(t => t.taskDate === dayString).map(t => {
+                            const countDisplay = t.count ? ` (Count=${t.count})` : '';
+                            return `[${t.category}] ${t.description}${countDisplay} - (Status=${t.status})`
+                        }).join("\n");
+                        row.push(tasksForDay);
+                    }
                 });
                 return row;
             });
+
             const ws = XLSX.utils.aoa_to_sheet([header, ...data]);
             ws['!cols'] = [{ wch: 25 }, ...Array(7).fill({ wch: 40 })];
             const wb = XLSX.utils.book_new();
