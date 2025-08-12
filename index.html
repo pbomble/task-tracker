@@ -33,7 +33,7 @@
         }
         .task-grid {
             display: grid;
-            grid-template-columns: minmax(160px, 1fr) repeat(7, minmax(220px, 2fr));
+            grid-template-columns: minmax(180px, 1fr) repeat(7, minmax(220px, 2fr));
             min-width: 1400px;
         }
         .grid-header {
@@ -53,9 +53,11 @@
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
-        /* This rule is now handled by Tailwind's group-hover utility, but is kept for reference */
         .leave-entry:hover .leave-actions {
             opacity: 1;
+        }
+        .hidden-row > div {
+            display: none;
         }
     </style>
 </head>
@@ -113,7 +115,7 @@
                         <i class="fas fa-plus mr-2"></i>Add New Task
                     </button>
                 </div>
-                <div class="overflow-x-auto bg-white rounded-xl shadow-md">
+                <div id="taskGridContainer" class="overflow-x-auto bg-white rounded-xl shadow-md">
                      <div id="taskGrid" class="task-grid">
                         <!-- Task grid will be dynamically inserted here -->
                      </div>
@@ -165,9 +167,19 @@
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
                     <div>
+                        <label for="taskProject" class="block text-slate-600 text-sm font-bold mb-2">Project</label>
+                        <select id="taskProject" class="shadow-sm border border-slate-300 rounded-lg w-full py-2 px-3 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option>5050_MIK</option>
+                            <option>5051_MQB27</option>
+                            <option>5053_E3_1.2</option>
+                        </select>
+                    </div>
+                    <div>
                         <label for="taskDate" class="block text-slate-600 text-sm font-bold mb-2">Date</label>
                         <input type="date" id="taskDate" class="shadow-sm appearance-none border border-slate-300 rounded-lg w-full py-2 px-3 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
                     </div>
+                </div>
+                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
                     <div>
                          <label for="taskCategory" class="block text-slate-600 text-sm font-bold mb-2">Category</label>
                         <select id="taskCategory" class="shadow-sm border border-slate-300 rounded-lg w-full py-2 px-3 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500">
@@ -177,13 +189,15 @@
                             <option>Rework TCs</option>
                             <option>New Script/Automation</option>
                             <option>Rework Script/Automation</option>
+                            <option>Automation_Dry_run</option>
+                            <option>Execution</option>
                             <option>Req Analysis</option>
                         </select>
                     </div>
-                </div>
-                <div id="taskCountContainer" class="mb-5 hidden">
-                    <label for="taskCount" class="block text-slate-600 text-sm font-bold mb-2">Count</label>
-                    <input type="number" id="taskCount" class="shadow-sm appearance-none border border-slate-300 rounded-lg w-full py-2 px-3 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                     <div id="taskCountContainer" class="hidden">
+                        <label for="taskCount" class="block text-slate-600 text-sm font-bold mb-2">Count</label>
+                        <input type="number" id="taskCount" class="shadow-sm appearance-none border border-slate-300 rounded-lg w-full py-2 px-3 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                     <div>
@@ -280,7 +294,7 @@
     <div id="passwordModal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50 p-4">
         <div class="bg-white rounded-xl shadow-2xl p-8 w-full max-w-sm m-4 transform transition-transform scale-95">
             <h2 class="text-2xl font-bold mb-4 text-slate-800">Authentication Required</h2>
-            <p class="text-slate-500 mb-6 text-sm">Please enter the password to modify tasks.</p>
+            <p class="text-slate-500 mb-6 text-sm">Please enter the password to proceed.</p>
             <form id="passwordForm">
                 <div class="mb-4">
                     <label for="passwordInput" class="block text-slate-600 text-sm font-bold mb-2">Password</label>
@@ -316,7 +330,7 @@
     <script type="module">
         // Firebase Imports
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, collection, doc, addDoc, onSnapshot, updateDoc, deleteDoc, query, where, getDoc, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, doc, addDoc, onSnapshot, updateDoc, deleteDoc, query, where, getDoc, orderBy, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- App Configuration ---
         const firebaseConfig = {
@@ -337,7 +351,6 @@
             db = getFirestore(app);
         } catch (e) {
             console.error("Firebase initialization failed. Please check your firebaseConfig.", e);
-            // Using custom alert instead of window.alert
             showAlert("Configuration Error", "Could not initialize the database. Please check the Firebase configuration in the HTML file.");
         }
 
@@ -352,6 +365,7 @@
         let allLeaves = [];
         let tasksUnlocked = false;
         let passwordPromiseResolve = null;
+        let hiddenAssignees = new Set();
         
         // --- App Initialization ---
         document.addEventListener('DOMContentLoaded', () => {
@@ -376,7 +390,6 @@
         }
 
         function editUserId() {
-            // Using a custom modal for this would be better, but prompt is used for simplicity
             const newUserId = prompt("Enter your name or a new User ID:", currentUserId);
             if (newUserId && newUserId.trim() !== "") {
                 currentUserId = newUserId.trim();
@@ -528,7 +541,7 @@
         function toggleTaskCount() {
             const category = document.getElementById('taskCategory').value;
             const countContainer = document.getElementById('taskCountContainer');
-            const categoriesWithCount = ['New TCs', 'Rework TCs', 'New Script/Automation', 'Rework Script/Automation', 'Req Analysis'];
+            const categoriesWithCount = ['New TCs', 'Rework TCs', 'New Script/Automation', 'Rework Script/Automation', 'Req Analysis', 'Automation_Dry_run', 'Execution'];
             if (categoriesWithCount.includes(category)) {
                 countContainer.classList.remove('hidden');
             } else {
@@ -546,59 +559,84 @@
         }
 
         function renderTaskGrid(tasks, leaves, weekStartDate) {
-            taskGrid.innerHTML = '';
+            const taskGridEl = document.getElementById('taskGrid');
+            taskGridEl.innerHTML = '';
             const tasksByAssignee = tasks.reduce((acc, task) => { (acc[task.assignee || 'Unassigned'] = acc[task.assignee || 'Unassigned'] || []).push(task); return acc; }, {});
             const assignees = [...new Set([...Object.keys(tasksByAssignee), ...teamMembers.map(m => m.name)])].sort();
             
-            document.getElementById('no-tasks-message').style.display = assignees.length === 0 ? 'block' : 'none';
-            taskGrid.parentElement.style.display = assignees.length > 0 ? 'block' : 'none';
+            const container = document.getElementById('taskGridContainer');
+            const noTasksMessage = document.getElementById('no-tasks-message');
+            if (assignees.length === 0) {
+                container.classList.add('hidden');
+                noTasksMessage.classList.remove('hidden');
+            } else {
+                container.classList.remove('hidden');
+                noTasksMessage.classList.add('hidden');
+            }
             
             let headerHtml = '<div class="grid-header assignee-cell bg-slate-50 p-3 text-sm font-semibold text-slate-600 text-left border-slate-200">Assignee</div>';
             const days = Array.from({ length: 7 }, (_, i) => new Date(weekStartDate.getFullYear(), weekStartDate.getMonth(), weekStartDate.getDate() + i));
             days.forEach(day => { headerHtml += `<div class="grid-header bg-slate-50 p-3 text-sm font-semibold text-slate-600 text-center border-slate-200">${day.toLocaleDateString('en-US', { weekday: 'short' })}<br><span class="font-normal text-slate-500">${day.getDate()}</span></div>`; });
-            taskGrid.innerHTML = headerHtml;
-
+            
+            let bodyHtml = '';
             assignees.forEach(assignee => {
-                let rowHtml = `<div class="assignee-cell bg-white p-3 font-semibold text-slate-700 border-b border-r border-slate-200">${assignee}</div>`;
+                const isHidden = hiddenAssignees.has(assignee);
+                bodyHtml += `<div class="contents" data-assignee-row="${assignee}">`; // Use 'contents' to make this a non-visual wrapper
+                bodyHtml += `
+                    <div class="assignee-cell bg-white p-3 font-semibold text-slate-700 border-b border-r border-slate-200 flex items-center justify-between">
+                        <span>${assignee}</span>
+                        <button data-action="toggle-visibility" data-assignee="${assignee}" class="text-slate-400 hover:text-indigo-600 p-1">
+                            <i class="fas ${isHidden ? 'fa-eye' : 'fa-eye-slash'} pointer-events-none"></i>
+                        </button>
+                    </div>`;
+
                 days.forEach(day => {
+                    if (isHidden) {
+                        bodyHtml += `<div class="border-b border-slate-200 bg-slate-50"></div>`;
+                        return;
+                    }
+
                     const dayString = formatDate(day);
                     const leaveForDay = (leaves || []).find(l => l.userId === assignee && new Date(l.startDate.replace(/-/g, '\/')) <= day && day <= new Date(l.endDate.replace(/-/g, '\/')));
                     
                     if (leaveForDay) {
                         const leaveColors = {
-                            "Planned Leave": "bg-blue-100 text-blue-800",
-                            "Sick Leave": "bg-orange-100 text-orange-800",
-                            "Emergency Leave": "bg-violet-100 text-violet-800",
-                            "Medical Leave": "bg-green-100 text-green-800",
+                            "Planned Leave": "bg-blue-100 text-blue-800", "Sick Leave": "bg-orange-100 text-orange-800",
+                            "Emergency Leave": "bg-violet-100 text-violet-800", "Medical Leave": "bg-green-100 text-green-800",
                             "MEP_holiday": "bg-yellow-100 text-yellow-800"
                         };
                         const colorClasses = leaveColors[leaveForDay.reason] || 'bg-gray-100 text-gray-800';
-                        rowHtml += `<div class="p-3 border-b border-slate-200 ${colorClasses} flex items-center justify-center text-sm font-semibold"><i class="fas fa-user-clock mr-2"></i> ${leaveForDay.reason}</div>`;
+                        bodyHtml += `<div class="p-3 border-b border-slate-200 ${colorClasses} flex items-center justify-center text-sm font-semibold"><i class="fas fa-user-clock mr-2"></i> ${leaveForDay.reason}</div>`;
                     } else {
                         const tasksForDay = (tasksByAssignee[assignee] || []).filter(t => t.taskDate === dayString);
-                        rowHtml += `<div class="p-2 border-b border-slate-200 space-y-2">`;
+                        bodyHtml += `<div class="p-2 border-b border-slate-200 space-y-2 bg-white">`;
                         tasksForDay.forEach(task => {
                             const statusColors = {"To Do": "border-amber-400", "In Progress": "border-blue-400", "Done": "border-green-400"};
                             const countDisplay = task.count ? ` (${task.count})` : '';
-                            rowHtml += `
+                            const projectDisplay = task.project ? `<div class="text-xs text-indigo-500 font-semibold">${task.project}</div>` : '';
+                            bodyHtml += `
                                 <div class="task-card group bg-white p-3 rounded-lg shadow-sm border-l-4 ${statusColors[task.status]}" data-id="${task.id}">
-                                    <div class="flex justify-between items-center mb-1">
-                                        <span class="text-xs font-semibold text-slate-500">${task.category}</span>
+                                    <div class="flex justify-between items-start mb-1">
+                                        <div>
+                                            <span class="text-xs font-semibold text-slate-500">${task.category}</span>
+                                            ${projectDisplay}
+                                        </div>
                                         <div class="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                             <button data-action="edit" class="text-slate-400 hover:text-indigo-600"><i class="fas fa-pencil-alt fa-xs pointer-events-none"></i></button>
                                             <button data-action="delete" class="text-slate-400 hover:text-red-600"><i class="fas fa-trash-alt fa-xs pointer-events-none"></i></button>
                                         </div>
                                     </div>
                                     <p class="text-sm font-medium text-slate-800">${task.description}${countDisplay}</p>
-                                </div>
-                            `;
+                                </div>`;
                         });
-                        rowHtml += `</div>`;
+                        bodyHtml += `</div>`;
                     }
                 });
-                taskGrid.innerHTML += rowHtml;
+                bodyHtml += `</div>`;
             });
+            taskGridEl.innerHTML = headerHtml + bodyHtml;
         }
+
 
         async function handleTaskFormSubmit(e) {
             e.preventDefault();
@@ -609,6 +647,7 @@
                 assignee: document.getElementById('taskAssignee').value, 
                 status: document.getElementById('taskStatus').value, 
                 taskDate: document.getElementById('taskDate').value, 
+                project: document.getElementById('taskProject').value,
                 category: document.getElementById('taskCategory').value, 
                 count: document.getElementById('taskCount').value || null,
                 updatedBy: currentUserId, 
@@ -624,10 +663,22 @@
         async function handleTaskGridClick(e) {
             const button = e.target.closest('button[data-action]');
             if (!button) return;
+            
+            const action = button.dataset.action;
+
+            if (action === 'toggle-visibility') {
+                const assignee = button.dataset.assignee;
+                if (hiddenAssignees.has(assignee)) {
+                    hiddenAssignees.delete(assignee);
+                } else {
+                    hiddenAssignees.add(assignee);
+                }
+                updateWeekView(); // Re-render the grid to reflect the change
+                return;
+            }
+
             const taskCard = button.closest('[data-id]');
             if (!taskCard) return;
-
-            const action = button.dataset.action;
             const taskId = taskCard.dataset.id;
             
             performProtectedTaskAction(async () => {
@@ -635,7 +686,6 @@
                     const taskSnap = await getDoc(doc(getTasksCollection(), taskId));
                     if (taskSnap.exists()) openTaskModal({ id: taskSnap.id, ...taskSnap.data() });
                 } else if (action === 'delete') {
-                    // Using a custom confirmation modal would be better
                     if (confirm('Are you sure you want to delete this task?')) {
                         try { await deleteDoc(doc(getTasksCollection(), taskId)); } 
                         catch (error) { showAlert("Delete Error", "Failed to delete task."); }
@@ -654,9 +704,10 @@
             document.getElementById('taskAssignee').value = task ? task.assignee : currentUserId;
             document.getElementById('taskStatus').value = task ? task.status : 'To Do';
             document.getElementById('taskDate').value = task ? task.taskDate : formatDate(new Date());
+            document.getElementById('taskProject').value = task ? task.project : '5050_MIK';
             document.getElementById('taskCategory').value = task ? task.category : 'Task';
             document.getElementById('taskCount').value = task ? task.count : '';
-            toggleTaskCount(); // Show/hide count field based on category
+            toggleTaskCount();
             openModal('task');
         }
         
@@ -764,7 +815,6 @@
             leavesUnsubscribe = onSnapshot(q, (snapshot) => {
                 allLeaves = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 renderCalendar();
-                // Re-render task grid to reflect leave changes
                 if (document.getElementById('tasks-content').classList.contains('active')) {
                     updateWeekView();
                 }
@@ -791,19 +841,16 @@
                 if (leavesOnThisDay.length > 0) {
                     dayContent += '<div class="mt-1 space-y-1 px-1">';
                     leavesOnThisDay.forEach(leave => {
-                        // Action buttons for edit and delete
                         const actions = `
                             <div class="leave-actions absolute top-1 right-1 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button data-action="edit-leave" data-id="${leave.id}" class="text-slate-400 hover:text-indigo-600"><i class="fas fa-pencil-alt fa-xs pointer-events-none"></i></button>
                                 <button data-action="delete-leave" data-id="${leave.id}" class="text-slate-400 hover:text-red-600"><i class="fas fa-trash-alt fa-xs pointer-events-none"></i></button>
-                            </div>
-                        `;
+                            </div>`;
                         dayContent += `
                             <div class="leave-entry group relative text-xs bg-teal-100 text-teal-800 p-1 rounded" title="${leave.reason} - ${leave.userId}">
                                 <i class="fas fa-user-clock mr-1"></i>${leave.userId}: ${leave.reason}
                                 ${actions}
-                            </div>
-                        `;
+                            </div>`;
                     });
                     dayContent += '</div>';
                 }
@@ -849,13 +896,8 @@
 
             const leavePromises = usersToApplyLeave.map(userId => {
                 const leaveData = { 
-                    reason, 
-                    userId,
-                    startDate, 
-                    endDate, 
-                    updatedAt: new Date().toISOString() 
+                    reason, userId, startDate, endDate, updatedAt: new Date().toISOString() 
                 };
-                // Only update if it's a single user edit. For MEP_holiday, we add new entries.
                 if (leaveId && usersToApplyLeave.length === 1 && reason !== 'MEP_holiday') {
                     return updateDoc(doc(getLeavesCollection(), leaveId), leaveData);
                 } else {
@@ -923,46 +965,54 @@
         }
 
         async function handleClearAllLeaves() {
-            if (!confirm('Are you sure you want to delete ALL leave entries for the current month? This action cannot be undone.')) {
-                return;
-            }
+             performProtectedTaskAction(async () => {
+                if (!confirm('Are you sure you want to delete ALL leave entries for the current month? This action cannot be undone.')) {
+                    return;
+                }
 
-            const month = currentCalendarDate.getMonth();
-            const year = currentCalendarDate.getFullYear();
+                const month = currentCalendarDate.getMonth();
+                const year = currentCalendarDate.getFullYear();
 
-            const leavesInMonth = allLeaves.filter(leave => {
-                const startDate = new Date(leave.startDate.replace(/-/g, '\/'));
-                return startDate.getMonth() === month && startDate.getFullYear() === year;
+                const leavesInMonth = allLeaves.filter(leave => {
+                    const startDate = new Date(leave.startDate.replace(/-/g, '\/'));
+                    return startDate.getMonth() === month && startDate.getFullYear() === year;
+                });
+
+                if (leavesInMonth.length === 0) {
+                    showAlert("No Data", "There are no leave plans in the current month to delete.");
+                    return;
+                }
+
+                try {
+                    const batch = writeBatch(db);
+                    leavesInMonth.forEach(leave => {
+                        batch.delete(doc(getLeavesCollection(), leave.id));
+                    });
+                    await batch.commit();
+                    showAlert("Success", `Successfully deleted ${leavesInMonth.length} leave entries for the month.`);
+                } catch (error) {
+                    console.error("Error batch deleting leaves:", error);
+                    showAlert("Error", "Could not delete all leave entries.");
+                }
             });
-
-            if (leavesInMonth.length === 0) {
-                showAlert("No Data", "There are no leave plans in the current month to delete.");
-                return;
-            }
-
-            const deletePromises = leavesInMonth.map(leave => deleteDoc(doc(getLeavesCollection(), leave.id)));
-
-            try {
-                await Promise.all(deletePromises);
-                showAlert("Success", "All leave entries for the month have been deleted.");
-            } catch (error) {
-                console.error("Error deleting all leaves:", error);
-                showAlert("Error", "Could not delete all leave entries.");
-            }
         }
 
         function exportToExcel() {
             if (weeklyTasks.length === 0 && allLeaves.length === 0) return showAlert("No Data", "No tasks or leaves to export.");
             
-            const tasksByAssignee = weeklyTasks.reduce((acc, task) => { (acc[task.assignee || 'Unassigned'] = acc[task.assignee || 'Unassigned'] || []).push(task); return acc; }, {});
-            const assignees = [...new Set([...Object.keys(tasksByAssignee), ...teamMembers.map(m => m.name)])].sort();
+            const assignees = [...new Set([...weeklyTasks.map(t => t.assignee), ...teamMembers.map(m => m.name)])].sort();
 
-            const header = ["Assignee"];
+            const header = ["Assignee", "Project"];
             const days = Array.from({ length: 7 }, (_, i) => new Date(currentWeekStartDate.getFullYear(), currentWeekStartDate.getMonth(), currentWeekStartDate.getDate() + i));
             days.forEach(day => header.push(day.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })));
             
-            const data = assignees.map(assignee => {
+            const data = [];
+            assignees.forEach(assignee => {
+                if (hiddenAssignees.has(assignee)) return; // Skip hidden assignees
+
+                const tasksForAssignee = weeklyTasks.filter(t => t.assignee === assignee);
                 const row = [assignee];
+                
                 days.forEach(day => {
                     const dayString = formatDate(day);
                     const leaveForDay = (allLeaves || []).find(l => l.userId === assignee && new Date(l.startDate.replace(/-/g, '\/')) <= day && day <= new Date(l.endDate.replace(/-/g, '\/')));
@@ -970,18 +1020,20 @@
                     if(leaveForDay) {
                         row.push(leaveForDay.reason);
                     } else {
-                        const tasksForDay = (tasksByAssignee[assignee] || []).filter(t => t.taskDate === dayString).map(t => {
+                        const tasksForDay = tasksForAssignee.filter(t => t.taskDate === dayString).map(t => {
                             const countDisplay = t.count ? ` (Count=${t.count})` : '';
-                            return `[${t.category}] ${t.description}${countDisplay} - (Status=${t.status})`
+                            const projectInfo = t.project ? ` {${t.project}}` : '';
+                            return `[${t.category}]${projectInfo} ${t.description}${countDisplay} - (Status=${t.status})`
                         }).join("\n");
                         row.push(tasksForDay);
                     }
                 });
-                return row;
+                data.push(row);
             });
 
+
             const ws = XLSX.utils.aoa_to_sheet([header, ...data]);
-            ws['!cols'] = [{ wch: 25 }, ...Array(7).fill({ wch: 40 })];
+            ws['!cols'] = [{ wch: 25 }, { wch: 20 }, ...Array(7).fill({ wch: 45 })];
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Weekly Task Report");
             XLSX.writeFile(wb, `Task_Report_Week_Of_${formatDate(currentWeekStartDate)}.xlsx`);
@@ -1028,4 +1080,3 @@
     </script>
 </body>
 </html>
-```
