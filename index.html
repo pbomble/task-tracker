@@ -146,7 +146,7 @@
                         <h2 id="currentMonthYear" class="text-xl font-semibold"></h2>
                         <button id="nextMonthBtn" class="p-2 rounded-full hover:bg-slate-100"><i class="fas fa-chevron-right"></i></button>
                     </div>
-                    <div id="leaveCalendar" class="grid grid-cols-7 gap-1 text-center">
+                    <div id="leaveCalendar" class="grid grid-cols-8 gap-1 text-center">
                        <!-- Calendar will be dynamically inserted here -->
                     </div>
                 </div>
@@ -529,6 +529,22 @@
         function getStartOfWeek(d) { const date = new Date(d); const day = date.getDay(); const diff = date.getDate() - day + (day === 0 ? -6 : 1); return new Date(date.setDate(diff)); }
         function formatDate(date) { const year = date.getFullYear(); const month = (date.getMonth() + 1).toString().padStart(2, '0'); const day = date.getDate().toString().padStart(2, '0'); return `${year}-${month}-${day}`; }
 
+        /**
+         * Calculates the calendar week number for a given date.
+         * This implementation considers the week to start on Sunday.
+         * Week 1 is the week containing January 1st.
+         * @param {Date} d The date to calculate the week number for.
+         * @returns {number} The calendar week number.
+         */
+        function getWeekNumber(d) {
+            const date = new Date(d.getTime());
+            const yearStart = new Date(date.getFullYear(), 0, 1);
+            const firstDay = yearStart.getDay(); // 0=Sunday, 1=Monday, ...
+            const pastDaysOfYear = (date - yearStart) / 86400000;
+            return Math.ceil((pastDaysOfYear + firstDay + 1) / 7);
+        }
+
+
         function updateWeekView() {
             if (!currentUserId) return;
             const weekStart = new Date(currentWeekStartDate);
@@ -581,7 +597,7 @@
             let bodyHtml = '';
             assignees.forEach(assignee => {
                 const isHidden = hiddenAssignees.has(assignee);
-                bodyHtml += `<div class="contents" data-assignee-row="${assignee}">`; // Use 'contents' to make this a non-visual wrapper
+                bodyHtml += `<div class="contents" data-assignee-row="${assignee}">`;
                 bodyHtml += `
                     <div class="assignee-cell bg-white p-3 font-semibold text-slate-700 border-b border-r border-slate-200 flex items-center justify-between">
                         <span>${assignee}</span>
@@ -823,20 +839,40 @@
 
         function renderCalendar() {
             const calendarEl = document.getElementById('leaveCalendar');
-            if(!calendarEl) return;
+            if (!calendarEl) return;
             calendarEl.innerHTML = '';
             const month = currentCalendarDate.getMonth();
             const year = currentCalendarDate.getFullYear();
             document.getElementById('currentMonthYear').textContent = `${currentCalendarDate.toLocaleString('default', { month: 'long' })} ${year}`;
-            const firstDayOfMonth = new Date(year, month, 1).getDay();
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            
+            // Add headers
+            calendarEl.innerHTML += '<div class="font-bold text-sm text-slate-500 py-2">CW</div>';
             ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach(day => calendarEl.innerHTML += `<div class="font-bold text-sm text-slate-500 py-2">${day}</div>`);
-            for (let i = 0; i < firstDayOfMonth; i++) calendarEl.innerHTML += '<div></div>';
+
+            const firstDayOfMonth = new Date(year, month, 1).getDay(); // 0=Sun, 1=Mon...
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            // Add the first week number cell
+            let firstDate = new Date(year, month, 1);
+            calendarEl.innerHTML += `<div class="flex items-center justify-center font-semibold text-slate-500 text-sm bg-slate-50 rounded-lg">CW${getWeekNumber(firstDate)}</div>`;
+
+            // Add empty cells for the first week's offset
+            for (let i = 0; i < firstDayOfMonth; i++) {
+                calendarEl.innerHTML += '<div></div>';
+            }
+
+            // Add day cells for the month
             for (let day = 1; day <= daysInMonth; day++) {
+                const currentDate = new Date(year, month, day);
+                // If it's a Sunday (start of the week in the grid) and not the very first day, add a CW cell
+                if (currentDate.getDay() === 0 && day > 1) {
+                    calendarEl.innerHTML += `<div class="flex items-center justify-center font-semibold text-slate-500 text-sm bg-slate-50 rounded-lg">CW${getWeekNumber(currentDate)}</div>`;
+                }
+
                 const dayEl = document.createElement('div');
                 dayEl.className = 'calendar-day border border-slate-200 rounded-lg p-1 text-left relative min-h-[80px]';
-                const date = new Date(year, month, day);
-                const leavesOnThisDay = (allLeaves || []).filter(l => new Date(l.startDate.replace(/-/g, '\/')) <= date && date <= new Date(l.endDate.replace(/-/g, '\/')));
+                const leavesOnThisDay = (allLeaves || []).filter(l => new Date(l.startDate.replace(/-/g, '\/')) <= currentDate && currentDate <= new Date(l.endDate.replace(/-/g, '\/')));
+                
                 let dayContent = `<div class="text-sm font-semibold text-slate-700 text-right pr-2 pt-1">${day}</div>`;
                 if (leavesOnThisDay.length > 0) {
                     dayContent += '<div class="mt-1 space-y-1 px-1">';
@@ -858,6 +894,7 @@
                 calendarEl.appendChild(dayEl);
             }
         }
+
         
         function openLeaveModal(leave = null) {
             const form = document.getElementById('leaveForm');
