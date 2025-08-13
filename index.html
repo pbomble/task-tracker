@@ -158,7 +158,12 @@
             <!-- Weekly Count Tab -->
             <div id="weekly-count-content" class="tab-content">
                 <div class="bg-white p-6 rounded-xl shadow-md">
-                    <h2 class="text-xl font-semibold mb-4 text-slate-800">Weekly Count Summary</h2>
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-semibold text-slate-800">Weekly Count Summary <span id="weeklyCountDateRange" class="text-base font-normal text-slate-500"></span></h2>
+                        <button id="exportCountBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md text-sm transition-transform transform hover:scale-105">
+                            <i class="fas fa-file-excel mr-2"></i>Export
+                        </button>
+                    </div>
                     <div id="weeklyCountTableContainer" class="overflow-x-auto">
                         <!-- Weekly count table will be dynamically inserted here -->
                     </div>
@@ -443,6 +448,7 @@
             taskGrid.addEventListener('click', handleTaskGridClick);
             document.getElementById('exportExcelBtn').addEventListener('click', exportToExcel);
             document.getElementById('exportLeavesBtn').addEventListener('click', exportLeavesToExcel);
+            document.getElementById('exportCountBtn').addEventListener('click', exportCountDataToExcel);
             document.getElementById('leaveCalendar').addEventListener('click', handleCalendarClick);
             document.getElementById('clearAllLeavesBtn').addEventListener('click', handleClearAllLeaves);
             document.getElementById('taskCategory').addEventListener('change', toggleTaskCount);
@@ -577,7 +583,7 @@
             tasksUnsubscribe = onSnapshot(q, (snapshot) => {
                 weeklyTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 renderTaskGrid(weeklyTasks, allLeaves, startDate);
-                renderWeeklyCountData(weeklyTasks, teamMembers);
+                renderWeeklyCountData(weeklyTasks, teamMembers, startDate);
             }, (error) => { console.error("Error fetching tasks:", error); showAlert("Data Error", "Could not load tasks. Check your Firebase configuration and security rules."); });
         }
 
@@ -742,7 +748,7 @@
                 populateAssigneeDropdown();
                 populateLeaveUserDropdown();
                 renderTeamList();
-                renderWeeklyCountData(weeklyTasks, teamMembers);
+                renderWeeklyCountData(weeklyTasks, teamMembers, currentWeekStartDate);
             });
         }
 
@@ -1038,9 +1044,17 @@
         }
         
         // --- Weekly Count Data ---
-        function renderWeeklyCountData(tasks, members) {
+        function renderWeeklyCountData(tasks, members, weekStartDate) {
             const container = document.getElementById('weeklyCountTableContainer');
             if (!container) return;
+
+            const dateRangeEl = document.getElementById('weeklyCountDateRange');
+            if (dateRangeEl && weekStartDate) {
+                const weekEnd = new Date(weekStartDate);
+                weekEnd.setDate(weekEnd.getDate() + 6);
+                const weekNum = getWeekNumber(weekStartDate);
+                dateRangeEl.textContent = `(CW${weekNum}: ${weekStartDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })})`;
+            }
 
             const summary = {};
             members.forEach(member => {
@@ -1078,6 +1092,48 @@
 
             tableHtml += `</tbody></table>`;
             container.innerHTML = tableHtml;
+        }
+
+        function exportCountDataToExcel() {
+            const summary = {};
+            teamMembers.forEach(member => {
+                summary[member.name] = {};
+                categoriesWithCount.forEach(cat => {
+                    summary[member.name][cat] = 0;
+                });
+            });
+
+            weeklyTasks.forEach(task => {
+                if (task.assignee && task.count && categoriesWithCount.includes(task.category)) {
+                    const count = parseInt(task.count, 10) || 0;
+                    if (summary[task.assignee]) {
+                        summary[task.assignee][task.category] += count;
+                    }
+                }
+            });
+
+            if (teamMembers.length === 0) {
+                showAlert("No Data", "No team data to export.");
+                return;
+            }
+
+            const dataForSheet = teamMembers.map(member => {
+                const row = { "Team Member": member.name };
+                categoriesWithCount.forEach(cat => {
+                    row[cat.replace(/_/g, ' ')] = summary[member.name][cat] || 0;
+                });
+                return row;
+            });
+
+            const ws = XLSX.utils.json_to_sheet(dataForSheet);
+            const colWidths = [{ wch: 25 }, ...categoriesWithCount.map(cat => ({ wch: cat.length + 5 }))];
+            ws['!cols'] = colWidths;
+
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Weekly Count Summary");
+            
+            const weekNum = getWeekNumber(currentWeekStartDate);
+            XLSX.writeFile(wb, `Weekly_Count_Summary_CW${weekNum}.xlsx`);
         }
 
 
