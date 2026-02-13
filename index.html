@@ -1196,6 +1196,8 @@
                 if (document.getElementById('tasks-content').classList.contains('active')) {
                     updateWeekView();
                 }
+                // Always refresh utilization table as it depends on leaves now
+                renderUtilizedHours(weeklyTasks, teamMembers, currentWeekStartDate);
             }, (error) => { console.error("Error fetching leaves:", error); });
         }
 
@@ -1552,25 +1554,36 @@
                 
                 days.forEach(day => {
                     const dayString = formatDate(day);
-                    const dayData = utilization[member.name]?.[dayString];
+                    
+                    // --- UPDATED LOGIC START ---
+                    // Check for leave
+                    const leave = allLeaves.find(l => l.userId === member.name && dayString >= l.startDate && dayString <= l.endDate);
+                    
                     let cellContent = '';
                     
-                    if (dayData) {
-                        const hrs5050 = (dayData.p5050 / 100) * 8.5;
-                        const hrs5053 = (dayData.p5053 / 100) * 8.5;
-                        const totalHours = hrs5050 + hrs5053;
-
-                        if (hrs5050 > 0) cellContent += `<div class="text-xs text-teal-600 font-semibold">5050: ${hrs5050.toFixed(1)}h</div>`;
-                        if (hrs5053 > 0) cellContent += `<div class="text-xs text-purple-600 font-semibold">5053: ${hrs5053.toFixed(1)}h</div>`;
-                        
-                        if (totalHours > 0) {
-                            cellContent += `<div class="text-xs font-bold text-slate-800 border-t border-slate-100 mt-1 pt-1">Total: ${totalHours.toFixed(1)}h</div>`;
-                        } else {
-                             cellContent = `<span class="text-xs text-slate-300">-</span>`;
-                        }
+                    if (leave) {
+                        cellContent = `<div class="text-xs text-orange-700 font-bold bg-orange-100 p-1 rounded border border-orange-200">${leave.reason}=8.5h</div>`;
                     } else {
-                        cellContent = `<span class="text-xs text-slate-300">-</span>`;
+                        const dayData = utilization[member.name]?.[dayString];
+                        
+                        if (dayData) {
+                            const hrs5050 = (dayData.p5050 / 100) * 8.5;
+                            const hrs5053 = (dayData.p5053 / 100) * 8.5;
+                            const totalHours = hrs5050 + hrs5053;
+
+                            if (hrs5050 > 0) cellContent += `<div class="text-xs text-teal-600 font-semibold">5050: ${hrs5050.toFixed(1)}h</div>`;
+                            if (hrs5053 > 0) cellContent += `<div class="text-xs text-purple-600 font-semibold">5053: ${hrs5053.toFixed(1)}h</div>`;
+                            
+                            if (totalHours > 0) {
+                                cellContent += `<div class="text-xs font-bold text-slate-800 border-t border-slate-100 mt-1 pt-1">Total: ${totalHours.toFixed(1)}h</div>`;
+                            } else {
+                                cellContent = `<span class="text-xs text-slate-300">-</span>`;
+                            }
+                        } else {
+                            cellContent = `<span class="text-xs text-slate-300">-</span>`;
+                        }
                     }
+                    // --- UPDATED LOGIC END ---
                     
                     tableHtml += `<td class="px-2 py-2 text-center align-top border-r border-slate-200 h-24">${cellContent}</td>`;
                 });
