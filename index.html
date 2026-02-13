@@ -64,7 +64,6 @@
 <body class="antialiased text-slate-800">
 
     <div id="app-container" class="p-4 sm:p-6 lg:p-8 max-w-full mx-auto">
-        <!-- Header -->
         <header class="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center">
             <div>
                 <h1 class="text-3xl font-bold text-slate-900">Team Task & Leave Tracker</h1>
@@ -72,7 +71,7 @@
             </div>
             <div class="mt-4 sm:mt-0 flex items-start space-x-4">
                  <button id="manageTeamBtn" class="bg-white text-slate-600 hover:bg-slate-50 font-semibold py-2 px-4 rounded-lg shadow-sm border border-slate-200 transition-colors">
-                    <i class="fas fa-users mr-2"></i>Manage Team
+                    <i class="fas fa-users mr-2"></i>Manage Team <i class="fas fa-lock text-xs ml-1 text-slate-400"></i>
                 </button>
                 <div class="text-sm bg-white p-3 rounded-lg shadow-sm border border-slate-200">
                     <p class="text-slate-500 font-medium">Your User ID:</p>
@@ -84,7 +83,6 @@
             </div>
         </header>
 
-        <!-- Tabs -->
         <div class="mb-6">
             <div class="border-b border-slate-200">
                 <nav class="-mb-px flex space-x-6" aria-label="Tabs">
@@ -101,9 +99,7 @@
             </div>
         </div>
 
-        <!-- Tab Content -->
         <main>
-            <!-- Tasks Tab -->
             <div id="tasks-content" class="tab-content active">
                 <div class="flex flex-col sm:flex-row justify-between items-center mb-6">
                     <div class="flex items-center space-x-2">
@@ -120,8 +116,7 @@
                 </div>
                 <div id="taskGridContainer" class="overflow-x-auto bg-white rounded-xl shadow-md">
                      <div id="taskGrid" class="task-grid">
-                        <!-- Task grid will be dynamically inserted here -->
-                     </div>
+                        </div>
                 </div>
                  <div id="no-tasks-message" class="hidden text-center py-20">
                     <i class="fas fa-folder-open text-5xl text-slate-300"></i>
@@ -130,7 +125,6 @@
                 </div>
             </div>
 
-            <!-- Leaves Tab -->
             <div id="leaves-content" class="tab-content">
                  <div class="flex justify-end mb-6 space-x-3">
                     <button id="clearAllLeavesBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg shadow-md text-sm transition-transform transform hover:scale-105">
@@ -150,12 +144,10 @@
                         <button id="nextMonthBtn" class="p-2 rounded-full hover:bg-slate-100"><i class="fas fa-chevron-right"></i></button>
                     </div>
                     <div id="leaveCalendar" class="grid grid-cols-8 gap-1 text-center">
-                       <!-- Calendar will be dynamically inserted here -->
-                    </div>
+                       </div>
                 </div>
             </div>
 
-            <!-- Weekly Count Tab -->
             <div id="weekly-count-content" class="tab-content">
                 <div class="bg-white p-6 rounded-xl shadow-md">
                     <div class="flex justify-between items-center mb-4">
@@ -165,15 +157,12 @@
                         </button>
                     </div>
                     <div id="weeklyCountTableContainer" class="overflow-x-auto">
-                        <!-- Weekly count table will be dynamically inserted here -->
-                    </div>
+                        </div>
                 </div>
             </div>
         </main>
     </div>
 
-    <!-- Modals -->
-    <!-- Task Modal -->
     <div id="taskModal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50 p-4">
         <div class="bg-white rounded-xl shadow-2xl p-8 w-full max-w-lg m-4 transform transition-transform scale-95">
             <h2 id="taskModalTitle" class="text-2xl font-bold mb-6 text-slate-800">Add New Task</h2>
@@ -212,7 +201,7 @@
                             <option>Req Analysis</option>
                         </select>
                     </div>
-                     <div id="taskCountContainer" class="hidden">
+                      <div id="taskCountContainer" class="hidden">
                         <label for="taskCount" class="block text-slate-600 text-sm font-bold mb-2">Count</label>
                         <input type="number" id="taskCount" class="shadow-sm appearance-none border border-slate-300 rounded-lg w-full py-2 px-3 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500">
                     </div>
@@ -221,8 +210,7 @@
                     <div>
                         <label for="taskAssignee" class="block text-slate-600 text-sm font-bold mb-2">Assign To</label>
                         <select id="taskAssignee" class="shadow-sm appearance-none border border-slate-300 rounded-lg w-full py-2 px-3 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
-                           <!-- Options will be populated by JS -->
-                        </select>
+                           </select>
                     </div>
                     <div>
                         <label for="taskStatus" class="block text-slate-600 text-sm font-bold mb-2">Status</label>
@@ -241,7 +229,6 @@
         </div>
     </div>
     
-    <!-- Team Management Modal -->
     <div id="teamModal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50 p-4">
         <div class="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md m-4 transform transition-transform scale-95">
             <h2 class="text-2xl font-bold mb-6 text-slate-800">Manage Team Members</h2>
@@ -252,15 +239,13 @@
                 </form>
             </div>
             <div id="teamMemberList" class="space-y-2 max-h-60 overflow-y-auto pr-2">
-                <!-- Team members will be listed here -->
-            </div>
+                </div>
             <div class="flex justify-end mt-6">
                  <button type="button" id="closeTeamModal" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 px-4 rounded-lg transition-colors">Close</button>
             </div>
         </div>
     </div>
 
-    <!-- Leave Modal -->
     <div id="leaveModal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50 p-4">
         <div class="bg-white rounded-xl shadow-2xl p-8 w-full max-w-lg m-4 transform transition-transform scale-95">
             <h2 id="leaveModalTitle" class="text-2xl font-bold mb-6 text-slate-800">Plan Leave</h2>
@@ -270,14 +255,12 @@
                      <div id="leaveUserContainer">
                         <label for="leaveUser" class="block text-slate-600 text-sm font-bold mb-2">Team Member</label>
                         <select id="leaveUser" class="shadow-sm appearance-none border border-slate-300 rounded-lg w-full py-2 px-3 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-teal-500" required>
-                           <!-- Options will be populated by JS -->
-                        </select>
+                           </select>
                     </div>
                     <div id="leaveUserMultiContainer" class="hidden">
                         <label class="block text-slate-600 text-sm font-bold mb-2">Team Members</label>
                         <div id="leaveUserCheckboxes" class="max-h-24 overflow-y-auto border border-slate-300 rounded-lg p-2 space-y-1">
-                            <!-- Checkboxes will be populated by JS -->
-                        </div>
+                            </div>
                     </div>
                     <div>
                         <label for="leaveReason" class="block text-slate-600 text-sm font-bold mb-2">Reason</label>
@@ -308,7 +291,6 @@
         </div>
     </div>
     
-    <!-- Password Modal -->
     <div id="passwordModal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50 p-4">
         <div class="bg-white rounded-xl shadow-2xl p-8 w-full max-w-sm m-4 transform transition-transform scale-95">
             <h2 class="text-2xl font-bold mb-4 text-slate-800">Authentication Required</h2>
@@ -326,7 +308,6 @@
         </div>
     </div>
 
-    <!-- Custom Alert Modal -->
     <div id="alertModal" class="modal fixed inset-0 bg-black bg-opacity-60 items-center justify-center z-50 p-4">
         <div class="bg-white rounded-xl shadow-2xl p-8 w-full max-w-sm m-4 text-center transform transition-transform scale-95">
             <div id="alertIcon" class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-5">
@@ -432,7 +413,11 @@
             document.querySelectorAll('.tab-button').forEach(button => button.addEventListener('click', () => switchTab(button.dataset.tab)));
             document.getElementById('addTaskBtn').addEventListener('click', () => performProtectedTaskAction(() => openTaskModal(null)));
             document.getElementById('addLeaveBtn').addEventListener('click', () => openLeaveModal(null));
-            document.getElementById('manageTeamBtn').addEventListener('click', () => openModal('team'));
+            
+            // --- UPDATED LINE BELOW: Added performProtectedTaskAction ---
+            document.getElementById('manageTeamBtn').addEventListener('click', () => performProtectedTaskAction(() => openModal('team')));
+            // ------------------------------------------------------------
+
             document.getElementById('cancelTask').addEventListener('click', () => closeModal('task'));
             document.getElementById('cancelLeave').addEventListener('click', () => closeModal('leave'));
             document.getElementById('closeTeamModal').addEventListener('click', () => closeModal('team'));
