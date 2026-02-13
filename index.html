@@ -86,6 +86,10 @@
             max-width: 100%;
             cursor: pointer;
         }
+        .allocation-footer {
+            background-color: #f8fafc;
+            border-top: 1px dashed #cbd5e1;
+        }
     </style>
 </head>
 <body class="antialiased text-slate-800">
@@ -118,13 +122,16 @@
                     <button class="tab-button active-tab group inline-flex items-center py-4 px-1 border-b-2 font-semibold text-sm text-indigo-600 border-indigo-500" data-tab="tasks">
                         <i class="fas fa-table-list mr-2 text-indigo-500"></i>Weekly Tasks <span id="taskLockIcon"></span>
                     </button>
+                    <!-- New Utilized Hrs Tab -->
+                    <button class="tab-button group inline-flex items-center py-4 px-1 border-b-2 font-semibold text-sm text-slate-500 border-transparent hover:text-slate-700 hover:border-slate-300" data-tab="utilized-hrs">
+                        <i class="fas fa-clock mr-2 text-slate-400 group-hover:text-slate-500"></i>Weekly Utilized Hrs
+                    </button>
                     <button class="tab-button group inline-flex items-center py-4 px-1 border-b-2 font-semibold text-sm text-slate-500 border-transparent hover:text-slate-700 hover:border-slate-300" data-tab="leaves">
                         <i class="fas fa-calendar-alt mr-2 text-slate-400 group-hover:text-slate-500"></i>Leave Planner
                     </button>
                     <button class="tab-button group inline-flex items-center py-4 px-1 border-b-2 font-semibold text-sm text-slate-500 border-transparent hover:text-slate-700 hover:border-slate-300" data-tab="weekly-count">
                         <i class="fas fa-chart-simple mr-2 text-slate-400 group-hover:text-slate-500"></i>Weekly Count Data
                     </button>
-                    <!-- New Metrics Tab -->
                     <button class="tab-button group inline-flex items-center py-4 px-1 border-b-2 font-semibold text-sm text-slate-500 border-transparent hover:text-slate-700 hover:border-slate-300" data-tab="metrics">
                         <i class="fas fa-chart-pie mr-2 text-slate-400 group-hover:text-slate-500"></i>Test Suite Metrics
                     </button>
@@ -158,6 +165,18 @@
                     <i class="fas fa-folder-open text-5xl text-slate-300"></i>
                     <p class="mt-4 text-xl font-semibold text-slate-600">No tasks for this week.</p>
                     <p class="text-sm text-slate-400">Click "Add New Task" to get started!</p>
+                </div>
+            </div>
+
+            <!-- Utilized Hrs Tab (New) -->
+            <div id="utilized-hrs-content" class="tab-content">
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-semibold text-slate-800">Weekly Utilized Hours <span class="text-sm font-normal text-slate-500">(100% = 8.5 Hrs)</span> <span id="utilizedHrsDateRange" class="text-base font-normal text-slate-500 ml-2"></span></h2>
+                    </div>
+                    <div id="utilizedHrsTableContainer" class="overflow-x-auto">
+                        <!-- Utilized Hrs Table will be inserted here -->
+                    </div>
                 </div>
             </div>
 
@@ -205,7 +224,7 @@
                 </div>
             </div>
 
-            <!-- Test Suite Metrics Tab (New) -->
+            <!-- Test Suite Metrics Tab -->
             <div id="metrics-content" class="tab-content">
                 <div class="bg-white p-6 rounded-xl shadow-md">
                     <div class="flex justify-between items-center mb-6">
@@ -299,7 +318,7 @@
                             <option>Req Analysis</option>
                         </select>
                     </div>
-                      <div id="taskCountContainer" class="hidden">
+                      <div id="taskCountContainer" class="hidden col-span-2 md:col-span-1">
                         <label for="taskCount" class="block text-slate-600 text-sm font-bold mb-2">Count</label>
                         <input type="number" id="taskCount" class="shadow-sm appearance-none border border-slate-300 rounded-lg w-full py-2 px-3 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500">
                     </div>
@@ -323,6 +342,31 @@
                 <div class="flex items-center justify-end space-x-3">
                     <button type="button" id="cancelTask" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 px-4 rounded-lg transition-colors">Cancel</button>
                     <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg shadow-indigo-500/30">Save Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Daily Allocation Modal (New) -->
+    <div id="allocationModal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-2xl p-8 w-full max-w-sm m-4 transform transition-transform scale-95">
+            <h2 class="text-xl font-bold mb-2 text-slate-800">Daily Allocation</h2>
+            <p id="allocModalDateDisplay" class="text-sm text-slate-500 mb-6 font-semibold"></p>
+            <form id="allocationForm">
+                <input type="hidden" id="allocId">
+                <input type="hidden" id="allocDate">
+                <input type="hidden" id="allocUser">
+                <div class="mb-4">
+                    <label for="alloc5050" class="block text-slate-600 text-sm font-bold mb-2 text-teal-600">Project 5050 (%)</label>
+                    <input type="number" id="alloc5050" min="0" max="100" class="shadow-sm appearance-none border border-slate-300 rounded-lg w-full py-2 px-3 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="0">
+                </div>
+                <div class="mb-6">
+                    <label for="alloc5053" class="block text-slate-600 text-sm font-bold mb-2 text-purple-600">Project 5053 (%)</label>
+                    <input type="number" id="alloc5053" min="0" max="100" class="shadow-sm appearance-none border border-slate-300 rounded-lg w-full py-2 px-3 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="0">
+                </div>
+                <div class="flex items-center justify-end space-x-3">
+                    <button type="button" id="cancelAllocation" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 px-4 rounded-lg transition-colors">Cancel</button>
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg">Save</button>
                 </div>
             </form>
         </div>
@@ -570,12 +614,14 @@
         let leavesUnsubscribe = null;
         let releasesUnsubscribe = null;
         let metricsUnsubscribe = null;
+        let allocationsUnsubscribe = null; // New
         let currentWeekStartDate = getStartOfWeek(new Date());
         let currentCalendarDate = new Date();
         let weeklyTasks = []; 
         let allLeaves = [];
         let allReleases = [];
         let allMetrics = [];
+        let allAllocations = []; // New
         let tasksUnlocked = false;
         let passwordPromiseResolve = null;
         let hiddenAssignees = new Set();
@@ -589,8 +635,9 @@
             loadTeamMembers();
             updateWeekView();
             loadLeaves();
-            loadReleases(); // Load releases
+            loadReleases(); 
             loadMetrics(); 
+            loadAllocations(); // New
             updateLockIcon();
         });
 
@@ -623,7 +670,8 @@
         const getLeavesCollection = () => collection(db, `apps/${appId}/leaves`);
         const getReleasesCollection = () => collection(db, `apps/${appId}/releases`);
         const getTeamCollection = () => collection(db, `apps/${appId}/team`);
-        const getMetricsCollection = () => collection(db, `apps/${appId}/metrics`); // New
+        const getMetricsCollection = () => collection(db, `apps/${appId}/metrics`); 
+        const getAllocationsCollection = () => collection(db, `apps/${appId}/allocations`); // New
 
         // --- Event Listeners ---
         function setupEventListeners() {
@@ -666,6 +714,10 @@
             document.getElementById('exportMetricsBtn').addEventListener('click', exportMetricsToExcel);
             document.querySelectorAll('.metric-input').forEach(input => input.addEventListener('input', calculateMetricTotal));
             document.querySelectorAll('.metric-auto-input').forEach(input => input.addEventListener('input', calculateAutomationPercent));
+
+            // --- Allocation Event Listeners ---
+            document.getElementById('cancelAllocation').addEventListener('click', () => closeModal('allocation'));
+            document.getElementById('allocationForm').addEventListener('submit', handleAllocationFormSubmit);
         }
         
         // --- Password Check ---
@@ -773,7 +825,12 @@
             if (!currentUserId) return;
             const weekStart = new Date(currentWeekStartDate);
             const weekEnd = new Date(weekStart); weekEnd.setDate(weekEnd.getDate() + 6);
-            document.getElementById('weekRangeDisplay').textContent = `${weekStart.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
+            const rangeText = `${weekStart.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
+            
+            document.getElementById('weekRangeDisplay').textContent = rangeText;
+            const utilizedDateRange = document.getElementById('utilizedHrsDateRange');
+            if(utilizedDateRange) utilizedDateRange.textContent = rangeText;
+
             loadTasksForWeek(weekStart, weekEnd);
         }
 
@@ -795,6 +852,7 @@
                 weeklyTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 renderTaskGrid(weeklyTasks, allLeaves, startDate);
                 renderWeeklyCountData(weeklyTasks, teamMembers, startDate);
+                renderUtilizedHours(weeklyTasks, teamMembers, startDate); // Render new table
             }, (error) => { console.error("Error fetching tasks:", error); showAlert("Data Error", "Could not load tasks. Check your Firebase configuration and security rules."); });
         }
 
@@ -849,13 +907,20 @@
                         bodyHtml += `<div class="p-3 border-b border-slate-200 ${colorClasses} flex items-center justify-center text-sm font-semibold"><i class="fas fa-user-clock mr-2"></i> ${leaveForDay.reason}</div>`;
                     } else {
                         const tasksForDay = (tasksByAssignee[assignee] || []).filter(t => t.taskDate === dayString);
-                        bodyHtml += `<div class="p-2 border-b border-slate-200 space-y-2 bg-white">`;
+                        bodyHtml += `<div class="p-2 border-b border-slate-200 space-y-2 bg-white flex flex-col justify-between h-full min-h-[120px]"><div>`;
                         tasksForDay.forEach(task => {
                             const statusColors = {"To Do": "border-amber-400", "In Progress": "border-blue-400", "Done": "border-green-400"};
                             const countDisplay = task.count ? ` (${task.count})` : '';
-                            const projectDisplay = task.project ? `<div class="text-xs text-indigo-500 font-semibold">${task.project}</div>` : '';
+                            
+                            // Project Highlighting Logic
+                            let projectClass = "text-slate-500 font-semibold";
+                            if (task.project && task.project.includes('5050')) projectClass = "text-teal-600 font-bold";
+                            else if (task.project && task.project.includes('5053')) projectClass = "text-purple-600 font-bold";
+
+                            const projectDisplay = task.project ? `<div class="text-xs ${projectClass}">${task.project}</div>` : '';
+
                             bodyHtml += `
-                                <div class="task-card group bg-white p-3 rounded-lg shadow-sm border-l-4 ${statusColors[task.status]}" data-id="${task.id}">
+                                <div class="task-card group bg-white p-3 rounded-lg shadow-sm border-l-4 ${statusColors[task.status]} mb-2" data-id="${task.id}">
                                     <div class="flex justify-between items-start mb-1">
                                         <div>
                                             <span class="text-xs font-semibold text-slate-500">${task.category}</span>
@@ -869,7 +934,20 @@
                                     <p class="text-sm font-medium text-slate-800">${task.description}${countDisplay}</p>
                                 </div>`;
                         });
-                        bodyHtml += `</div>`;
+                        
+                        // Allocation Footer
+                        const alloc = allAllocations.find(a => a.userId === assignee && a.date === dayString);
+                        let allocHtml = '<span class="text-slate-300 italic">Effort: -</span>';
+                        if (alloc) {
+                            allocHtml = `<span class="text-xs font-semibold text-teal-600">5050: ${alloc.p5050}%</span>, <span class="text-xs font-semibold text-purple-600">5053: ${alloc.p5053}%</span>`;
+                        }
+
+                        bodyHtml += `</div>
+                            <div class="mt-2 pt-2 border-t border-dashed border-slate-200 flex justify-between items-center text-xs allocation-footer">
+                                <div>${allocHtml}</div>
+                                <button data-action="edit-allocation" data-user="${assignee}" data-date="${dayString}" class="text-slate-400 hover:text-indigo-600"><i class="fas fa-pencil-alt"></i></button>
+                            </div>
+                        </div>`; // Close p-2 div
                     }
                 });
                 bodyHtml += `</div>`;
@@ -916,6 +994,15 @@
                 updateWeekView(); // Re-render the grid to reflect the change
                 return;
             }
+            
+            // New Allocation Action
+            if (action === 'edit-allocation') {
+                const userId = button.dataset.user;
+                const date = button.dataset.date;
+                const existing = allAllocations.find(a => a.userId === userId && a.date === date);
+                openAllocationModal(userId, date, existing);
+                return;
+            }
 
             const taskCard = button.closest('[data-id]');
             if (!taskCard) return;
@@ -951,6 +1038,54 @@
             openModal('task');
         }
         
+        // --- Allocation Logic (New) ---
+        function loadAllocations() {
+            if (allocationsUnsubscribe) allocationsUnsubscribe();
+            const q = query(getAllocationsCollection());
+            allocationsUnsubscribe = onSnapshot(q, (snapshot) => {
+                allAllocations = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                // Re-render views dependent on allocation
+                if (document.getElementById('tasks-content').classList.contains('active')) {
+                    updateWeekView();
+                }
+                renderUtilizedHours(weeklyTasks, teamMembers, currentWeekStartDate); // Refresh utilized hours
+            }, (error) => { console.error("Error fetching allocations:", error); });
+        }
+
+        function openAllocationModal(userId, date, allocation = null) {
+            document.getElementById('allocUser').value = userId;
+            document.getElementById('allocDate').value = date;
+            document.getElementById('allocId').value = allocation ? allocation.id : '';
+            document.getElementById('allocModalDateDisplay').textContent = `${userId} - ${date}`;
+            document.getElementById('alloc5050').value = allocation ? allocation.p5050 : '';
+            document.getElementById('alloc5053').value = allocation ? allocation.p5053 : '';
+            openModal('allocation');
+        }
+
+        async function handleAllocationFormSubmit(e) {
+            e.preventDefault();
+            const id = document.getElementById('allocId').value;
+            const userId = document.getElementById('allocUser').value;
+            const date = document.getElementById('allocDate').value;
+            const p5050 = parseInt(document.getElementById('alloc5050').value) || 0;
+            const p5053 = parseInt(document.getElementById('alloc5053').value) || 0;
+
+            const data = { userId, date, p5050, p5053, updatedAt: new Date().toISOString() };
+
+            try {
+                if (id) {
+                    await updateDoc(doc(getAllocationsCollection(), id), data);
+                } else {
+                    data.createdAt = new Date().toISOString();
+                    await addDoc(getAllocationsCollection(), data);
+                }
+                closeModal('allocation');
+            } catch (error) {
+                console.error("Error saving allocation:", error);
+                showAlert("Error", "Failed to save allocation.");
+            }
+        }
+        
         // --- Team Management ---
         function loadTeamMembers() {
             const q = query(getTeamCollection(), orderBy("name"));
@@ -961,6 +1096,7 @@
                 populateMetricEngineerDropdown();
                 renderTeamList();
                 renderWeeklyCountData(weeklyTasks, teamMembers, currentWeekStartDate);
+                renderUtilizedHours(weeklyTasks, teamMembers, currentWeekStartDate);
             });
         }
 
@@ -1342,14 +1478,6 @@
             const container = document.getElementById('weeklyCountTableContainer');
             if (!container) return;
 
-            const dateRangeEl = document.getElementById('weeklyCountDateRange');
-            if (dateRangeEl && weekStartDate) {
-                const weekEnd = new Date(weekStartDate);
-                weekEnd.setDate(weekEnd.getDate() + 6);
-                const weekNum = getWeekNumber(weekStartDate);
-                dateRangeEl.textContent = `(CW${weekNum}: ${weekStartDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })})`;
-            }
-
             const summary = {};
             members.forEach(member => {
                 summary[member.name] = {};
@@ -1384,6 +1512,70 @@
                 tableHtml += `</tr>`;
             });
 
+            tableHtml += `</tbody></table>`;
+            container.innerHTML = tableHtml;
+        }
+
+        // --- Weekly Utilized Hours Logic (New) ---
+        function renderUtilizedHours(tasks, members, weekStartDate) {
+            const container = document.getElementById('utilizedHrsTableContainer');
+            if (!container) return;
+
+            const days = Array.from({ length: 7 }, (_, i) => new Date(weekStartDate.getFullYear(), weekStartDate.getMonth(), weekStartDate.getDate() + i));
+            
+            // Structure: { MemberName: { DateString: { p5050: number, p5053: number } } }
+            const utilization = {};
+            members.forEach(m => utilization[m.name] = {});
+
+            // Use Allocations Collection instead of tasks
+            allAllocations.forEach(alloc => {
+                if (utilization[alloc.userId]) {
+                    utilization[alloc.userId][alloc.date] = { 
+                        p5050: alloc.p5050 || 0, 
+                        p5053: alloc.p5053 || 0 
+                    };
+                }
+            });
+
+            let tableHtml = `<table class="min-w-full divide-y divide-slate-200 border border-slate-200">
+                <thead class="bg-slate-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider border-r border-slate-200 sticky left-0 bg-slate-50 z-10">Team Member</th>`;
+            
+            days.forEach(day => {
+                tableHtml += `<th class="px-2 py-3 text-center text-xs font-bold text-slate-600 uppercase tracking-wider border-r border-slate-200">${day.toLocaleDateString('en-US', { weekday: 'short' })}<br>${day.getDate()}</th>`;
+            });
+            tableHtml += `</tr></thead><tbody class="bg-white divide-y divide-slate-200">`;
+
+            members.forEach(member => {
+                tableHtml += `<tr><td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-slate-900 border-r border-slate-200 sticky left-0 bg-white z-10">${member.name}</td>`;
+                
+                days.forEach(day => {
+                    const dayString = formatDate(day);
+                    const dayData = utilization[member.name]?.[dayString];
+                    let cellContent = '';
+                    
+                    if (dayData) {
+                        const hrs5050 = (dayData.p5050 / 100) * 8.5;
+                        const hrs5053 = (dayData.p5053 / 100) * 8.5;
+                        const totalHours = hrs5050 + hrs5053;
+
+                        if (hrs5050 > 0) cellContent += `<div class="text-xs text-teal-600 font-semibold">5050: ${hrs5050.toFixed(1)}h</div>`;
+                        if (hrs5053 > 0) cellContent += `<div class="text-xs text-purple-600 font-semibold">5053: ${hrs5053.toFixed(1)}h</div>`;
+                        
+                        if (totalHours > 0) {
+                            cellContent += `<div class="text-xs font-bold text-slate-800 border-t border-slate-100 mt-1 pt-1">Total: ${totalHours.toFixed(1)}h</div>`;
+                        } else {
+                             cellContent = `<span class="text-xs text-slate-300">-</span>`;
+                        }
+                    } else {
+                        cellContent = `<span class="text-xs text-slate-300">-</span>`;
+                    }
+                    
+                    tableHtml += `<td class="px-2 py-2 text-center align-top border-r border-slate-200 h-24">${cellContent}</td>`;
+                });
+                tableHtml += `</tr>`;
+            });
             tableHtml += `</tbody></table>`;
             container.innerHTML = tableHtml;
         }
