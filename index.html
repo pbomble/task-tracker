@@ -173,6 +173,9 @@
                 <div class="bg-white p-6 rounded-xl shadow-md">
                     <div class="flex justify-between items-center mb-4">
                         <h2 class="text-xl font-semibold text-slate-800">Weekly Utilized Hours <span class="text-sm font-normal text-slate-500">(100% = 8.5 Hrs)</span> <span id="utilizedHrsDateRange" class="text-base font-normal text-slate-500 ml-2"></span></h2>
+                        <button id="exportUtilizedBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md text-sm transition-transform transform hover:scale-105">
+                            <i class="fas fa-file-excel mr-2"></i>Export
+                        </button>
                     </div>
                     <div id="utilizedHrsTableContainer" class="overflow-x-auto">
                         <!-- Utilized Hrs Table will be inserted here -->
@@ -718,6 +721,8 @@
             // --- Allocation Event Listeners ---
             document.getElementById('cancelAllocation').addEventListener('click', () => closeModal('allocation'));
             document.getElementById('allocationForm').addEventListener('submit', handleAllocationFormSubmit);
+            // New Export Utilized Hours Listener
+            document.getElementById('exportUtilizedBtn').addEventListener('click', exportUtilizedHoursToExcel);
         }
         
         // --- Password Check ---
@@ -825,7 +830,9 @@
             if (!currentUserId) return;
             const weekStart = new Date(currentWeekStartDate);
             const weekEnd = new Date(weekStart); weekEnd.setDate(weekEnd.getDate() + 6);
-            const rangeText = `${weekStart.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
+            
+            const cw = getWeekNumber(weekStart);
+            const rangeText = `(CW${cw}) ${weekStart.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
             
             document.getElementById('weekRangeDisplay').textContent = rangeText;
             const utilizedDateRange = document.getElementById('utilizedHrsDateRange');
@@ -1591,6 +1598,64 @@
             });
             tableHtml += `</tbody></table>`;
             container.innerHTML = tableHtml;
+        }
+
+        // --- Export Utilized Hours Logic (New) ---
+        function exportUtilizedHoursToExcel() {
+            const days = Array.from({ length: 7 }, (_, i) => new Date(currentWeekStartDate.getFullYear(), currentWeekStartDate.getMonth(), currentWeekStartDate.getDate() + i));
+            
+            // Build structure similar to render
+            const utilization = {};
+            teamMembers.forEach(m => utilization[m.name] = {});
+            allAllocations.forEach(alloc => {
+                if (utilization[alloc.userId]) {
+                    utilization[alloc.userId][alloc.date] = { 
+                        p5050: alloc.p5050 || 0, 
+                        p5053: alloc.p5053 || 0 
+                    };
+                }
+            });
+
+            // Headers
+            const header = ["Team Member"];
+            days.forEach(day => header.push(`${day.toLocaleDateString('en-US', { weekday: 'short' })} ${day.getDate()}`));
+
+            // Data
+            const data = teamMembers.map(member => {
+                const row = [member.name];
+                days.forEach(day => {
+                    const dayString = formatDate(day);
+                    const leave = allLeaves.find(l => l.userId === member.name && dayString >= l.startDate && dayString <= l.endDate);
+                    
+                    if (leave) {
+                        row.push(`${leave.reason} (8.5h)`);
+                    } else {
+                        const dayData = utilization[member.name]?.[dayString];
+                        if (dayData) {
+                            const hrs5050 = (dayData.p5050 / 100) * 8.5;
+                            const hrs5053 = (dayData.p5053 / 100) * 8.5;
+                            const totalHours = hrs5050 + hrs5053;
+                            
+                            let cellText = "";
+                            if (hrs5050 > 0) cellText += `5050: ${hrs5050.toFixed(1)}h\n`;
+                            if (hrs5053 > 0) cellText += `5053: ${hrs5053.toFixed(1)}h\n`;
+                            if (totalHours > 0) cellText += `Total: ${totalHours.toFixed(1)}h`;
+                            row.push(cellText.trim());
+                        } else {
+                            row.push("-");
+                        }
+                    }
+                });
+                return row;
+            });
+
+            const cw = getWeekNumber(currentWeekStartDate);
+            const ws = XLSX.utils.aoa_to_sheet([header, ...data]);
+            ws['!cols'] = [{ wch: 20 }, ...Array(7).fill({ wch: 20 })]; // Column widths
+
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Utilized Hours");
+            XLSX.writeFile(wb, `Utilized_Hours_CW${cw}.xlsx`);
         }
 
         // --- Metrics Logic ---
