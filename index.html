@@ -90,6 +90,10 @@
             background-color: #f8fafc;
             border-top: 1px dashed #cbd5e1;
         }
+        /* Weekend Style */
+        .weekend-day {
+            background-color: #f1f5f9; /* Slate 100 */
+        }
     </style>
 </head>
 <body class="antialiased text-slate-800">
@@ -100,18 +104,12 @@
             <div>
                 <h1 class="text-3xl font-bold text-slate-900">Team Task & Leave Tracker</h1>
                 <p class="text-slate-500 mt-1">Your team's central hub for tasks, availability, and metrics.</p>
+                <p class="text-xs text-slate-300 mt-1 font-mono italic">-P.B</p>
             </div>
             <div class="mt-4 sm:mt-0 flex items-start space-x-4">
                  <button id="manageTeamBtn" class="bg-white text-slate-600 hover:bg-slate-50 font-semibold py-2 px-4 rounded-lg shadow-sm border border-slate-200 transition-colors">
                     <i class="fas fa-users mr-2"></i>Manage Team <i class="fas fa-lock text-xs ml-1 text-slate-400"></i>
                 </button>
-                <div class="text-sm bg-white p-3 rounded-lg shadow-sm border border-slate-200">
-                    <p class="text-slate-500 font-medium">Your User ID:</p>
-                    <div class="flex items-center mt-1">
-                        <span id="userIdDisplay" class="font-mono bg-slate-100 text-indigo-600 px-3 py-1 rounded-md font-semibold"></span>
-                        <button id="editUserIdBtn" class="ml-2 text-slate-400 hover:text-indigo-600 transition-colors"><i class="fas fa-pencil-alt"></i></button>
-                    </div>
-                </div>
             </div>
         </header>
 
@@ -122,7 +120,7 @@
                     <button class="tab-button active-tab group inline-flex items-center py-4 px-1 border-b-2 font-semibold text-sm text-indigo-600 border-indigo-500" data-tab="tasks">
                         <i class="fas fa-table-list mr-2 text-indigo-500"></i>Weekly Tasks <span id="taskLockIcon"></span>
                     </button>
-                    <!-- New Utilized Hrs Tab -->
+                    <!-- Utilized Hrs Tab -->
                     <button class="tab-button group inline-flex items-center py-4 px-1 border-b-2 font-semibold text-sm text-slate-500 border-transparent hover:text-slate-700 hover:border-slate-300" data-tab="utilized-hrs">
                         <i class="fas fa-clock mr-2 text-slate-400 group-hover:text-slate-500"></i>Weekly Utilized Hrs
                     </button>
@@ -168,7 +166,7 @@
                 </div>
             </div>
 
-            <!-- Utilized Hrs Tab (New) -->
+            <!-- Utilized Hrs Tab (Updated) -->
             <div id="utilized-hrs-content" class="tab-content">
                 <div class="bg-white p-6 rounded-xl shadow-md">
                     <div class="flex justify-between items-center mb-4">
@@ -466,7 +464,10 @@
                     </div>
                 </div>
                  <div class="mb-4">
-                    <label class="block text-slate-600 text-sm font-bold mb-2">Automation %: <span id="metricAutoPercentDisplay" class="text-orange-600">0%</span></label>
+                    <div class="flex justify-between items-center mb-2">
+                         <label class="block text-slate-600 text-sm font-bold">Automation Sum: <span id="metricAutoSumDisplay" class="text-indigo-600">0</span></label>
+                         <label class="block text-slate-600 text-sm font-bold">Automation %: <span id="metricAutoPercentDisplay" class="text-orange-600">0%</span></label>
+                    </div>
                      <label for="metricAutoReason" class="block text-slate-600 text-xs font-bold mb-1">Reason for non-automated TCs</label>
                     <textarea id="metricAutoReason" rows="2" class="shadow-sm border border-slate-300 rounded-lg w-full py-2 px-3 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-500"></textarea>
                 </div>
@@ -524,6 +525,7 @@
                             <option>Sick Leave</option>
                             <option>Emergency Leave</option>
                             <option>Medical Leave</option>
+                            <option>CompOff</option>
                             <option>MEP_holiday</option>
                         </select>
                     </div>
@@ -611,7 +613,7 @@
         }
 
         // --- Global State ---
-        let currentUserId = null;
+        let currentUserId = "Admin";
         let teamMembers = [];
         let tasksUnsubscribe = null;
         let leavesUnsubscribe = null;
@@ -633,7 +635,6 @@
         // --- App Initialization ---
         document.addEventListener('DOMContentLoaded', () => {
             if (!db) return; 
-            initializeUser();
             setupEventListeners();
             loadTeamMembers();
             updateWeekView();
@@ -643,30 +644,6 @@
             loadAllocations(); // New
             updateLockIcon();
         });
-
-        // --- User Initialization ---
-        function initializeUser() {
-            let userId = localStorage.getItem('taskTrackerUserId-v2');
-            if (!userId) {
-                userId = `User-${Math.floor(1000 + Math.random() * 9000)}`;
-                localStorage.setItem('taskTrackerUserId-v2', userId);
-            }
-            currentUserId = userId;
-            userIdDisplay.textContent = currentUserId;
-        }
-
-        function editUserId() {
-            const newUserId = prompt("Enter your name or a new User ID:", currentUserId);
-            if (newUserId && newUserId.trim() !== "") {
-                currentUserId = newUserId.trim();
-                localStorage.setItem('taskTrackerUserId-v2', currentUserId);
-                userIdDisplay.textContent = currentUserId;
-                if (!teamMembers.find(m => m.name === currentUserId)) {
-                    addTeamMember(currentUserId);
-                }
-                updateWeekView();
-            }
-        }
 
         // --- Firestore Collections ---
         const getTasksCollection = () => collection(db, `apps/${appId}/tasks`);
@@ -678,7 +655,6 @@
 
         // --- Event Listeners ---
         function setupEventListeners() {
-            document.getElementById('editUserIdBtn').addEventListener('click', editUserId);
             document.querySelectorAll('.tab-button').forEach(button => button.addEventListener('click', () => switchTab(button.dataset.tab)));
             document.getElementById('addTaskBtn').addEventListener('click', () => performProtectedTaskAction(() => openTaskModal(null)));
             document.getElementById('addLeaveBtn').addEventListener('click', () => openLeaveModal(null));
@@ -1035,7 +1011,8 @@
             document.getElementById('taskModalTitle').textContent = task ? 'Edit Task' : 'Add New Task';
             document.getElementById('taskId').value = task ? task.id : '';
             document.getElementById('taskDescription').value = task ? task.description : '';
-            document.getElementById('taskAssignee').value = task ? task.assignee : currentUserId;
+            // Default to empty if creating new, or task value if editing
+            document.getElementById('taskAssignee').value = task ? task.assignee : "";
             document.getElementById('taskStatus').value = task ? task.status : 'To Do';
             document.getElementById('taskDate').value = task ? task.taskDate : formatDate(new Date());
             document.getElementById('taskProject').value = task ? task.project : '5050_MIK';
@@ -1117,7 +1094,8 @@
                 option.textContent = member.name;
                 assigneeSelect.appendChild(option);
             });
-            assigneeSelect.value = teamMembers.some(m => m.name === currentVal) ? currentVal : currentUserId;
+            // Default to empty if currentVal is not in list
+            assigneeSelect.value = teamMembers.some(m => m.name === currentVal) ? currentVal : "";
         }
         
         function populateLeaveUserDropdown() {
@@ -1130,7 +1108,7 @@
                 option.textContent = member.name;
                 userSelect.appendChild(option);
             });
-             userSelect.value = teamMembers.some(m => m.name === currentVal) ? currentVal : currentUserId;
+             userSelect.value = teamMembers.some(m => m.name === currentVal) ? currentVal : "";
         }
 
         function renderTeamList() {
@@ -1275,6 +1253,8 @@
 
             for (let day = 1; day <= daysInMonth; day++) {
                 const currentDate = new Date(year, month, day);
+                const isWeekend = currentDate.getDay() === 0 || currentDate.getDay() === 6;
+
                 if (currentDate.getDay() === 0 && day > 1) {
                     calendarEl.innerHTML += `<div class="flex items-center justify-center font-semibold text-slate-500 text-sm bg-slate-50 rounded-lg">CW${getWeekNumber(currentDate)}</div>`;
                 }
@@ -1292,6 +1272,11 @@
                 // Highlight release days
                 if (releasesOnThisDay.length > 0) {
                     dayClasses += ' release-day';
+                }
+                
+                // Highlight weekend days
+                if (isWeekend) {
+                     dayClasses += ' weekend-day';
                 }
                 
                 dayEl.className = dayClasses;
@@ -1318,13 +1303,26 @@
                 if (leavesOnThisDay.length > 0) {
                     dayContent += '<div class="mt-1 space-y-1 px-1 grow">';
                     leavesOnThisDay.forEach(leave => {
+                        let colorClass = 'bg-blue-100 text-blue-800'; // Default Pending
+                        if (leave.reason === 'MEP_holiday') {
+                             colorClass = 'bg-purple-100 text-purple-800';
+                        } else if (leave.status === 'Approved') {
+                             colorClass = 'bg-green-700 text-white';
+                        }
+
+                        let approveBtn = '';
+                        if (leave.reason !== 'MEP_holiday' && leave.status !== 'Approved') {
+                             approveBtn = `<button data-action="approve-leave" data-id="${leave.id}" class="text-green-500 hover:text-green-700 bg-white rounded-full p-0.5 shadow-sm ml-1" title="Approve"><i class="fas fa-check fa-xs pointer-events-none"></i></button>`;
+                        }
+
                         const actions = `
                             <div class="leave-actions absolute top-1 right-1 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                ${approveBtn}
                                 <button data-action="edit-leave" data-id="${leave.id}" class="text-slate-400 hover:text-indigo-600 bg-white rounded-full p-0.5 shadow-sm"><i class="fas fa-pencil-alt fa-xs pointer-events-none"></i></button>
                                 <button data-action="delete-leave" data-id="${leave.id}" class="text-slate-400 hover:text-red-600 bg-white rounded-full p-0.5 shadow-sm"><i class="fas fa-trash-alt fa-xs pointer-events-none"></i></button>
                             </div>`;
                         dayContent += `
-                            <div class="leave-entry group relative text-xs bg-teal-100 text-teal-800 p-1 rounded" title="${leave.reason} - ${leave.userId}">
+                            <div class="leave-entry group relative text-xs ${colorClass} p-1 rounded mb-1" title="${leave.reason} - ${leave.userId} (${leave.status || 'Pending'})">
                                 <i class="fas fa-user-clock mr-1"></i>${leave.userId}: ${leave.reason}
                                 ${actions}
                             </div>`;
@@ -1380,10 +1378,14 @@
             }
 
             const leavePromises = usersToApplyLeave.map(userId => {
+                // Initialize status as Pending for new leaves unless specifically handled otherwise (MEP holidays might bypass, but keeping consistent)
                 const leaveData = { 
-                    reason, userId, startDate, endDate, updatedAt: new Date().toISOString() 
+                    reason, userId, startDate, endDate, updatedAt: new Date().toISOString(),
+                    status: 'Pending' // Default status
                 };
                 if (leaveId && usersToApplyLeave.length === 1 && reason !== 'MEP_holiday') {
+                    // Don't change status on edit from modal
+                    delete leaveData.status; 
                     return updateDoc(doc(getLeavesCollection(), leaveId), leaveData);
                 } else {
                     leaveData.createdAt = new Date().toISOString();
@@ -1414,6 +1416,14 @@
                         showAlert("Delete Error", "Failed to delete leave entry.");
                     }
                 }
+            } else if (action === 'approve-leave') {
+                 performProtectedTaskAction(async () => {
+                    try {
+                        await updateDoc(doc(getLeavesCollection(), leaveId), { status: 'Approved' });
+                    } catch (error) {
+                        showAlert("Error", "Failed to approve leave.");
+                    }
+                 });
             }
         }
         
@@ -1650,7 +1660,12 @@
             });
 
             const cw = getWeekNumber(currentWeekStartDate);
-            const ws = XLSX.utils.aoa_to_sheet([header, ...data]);
+            // Title Row
+            const titleRow = [`Weekly Utilized Hours - CW${cw} (${days[0].toLocaleDateString()} - ${days[6].toLocaleDateString()})`];
+            
+            // combine
+            const wsData = [titleRow, [], header, ...data];
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
             ws['!cols'] = [{ wch: 20 }, ...Array(7).fill({ wch: 20 })]; // Column widths
 
             const wb = XLSX.utils.book_new();
@@ -1725,7 +1740,15 @@
             const total = reviewed + proposed + draft;
             
             const fully = parseInt(document.getElementById('metricFully').value) || 0;
+            const semi = parseInt(document.getElementById('metricSemi').value) || 0;
+            const can = parseInt(document.getElementById('metricCan').value) || 0;
+            const cannot = parseInt(document.getElementById('metricCannot').value) || 0;
             
+            // New logic
+            const sum = fully + semi + can + cannot;
+            const sumDisplay = document.getElementById('metricAutoSumDisplay');
+            if(sumDisplay) sumDisplay.textContent = sum;
+
             let percent = 0;
             if (total > 0) {
                 percent = (fully / total) * 100;
