@@ -7,7 +7,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Switched to xlsx-js-style for color support in export -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -635,6 +636,7 @@
         // --- App Initialization ---
         document.addEventListener('DOMContentLoaded', () => {
             if (!db) return; 
+            // initializeUser(); // REMOVED
             setupEventListeners();
             loadTeamMembers();
             updateWeekView();
@@ -644,6 +646,9 @@
             loadAllocations(); // New
             updateLockIcon();
         });
+
+        // --- User Initialization ---
+        // Removed initializeUser and editUserId functions as they relied on removed DOM elements
 
         // --- Firestore Collections ---
         const getTasksCollection = () => collection(db, `apps/${appId}/tasks`);
@@ -655,6 +660,7 @@
 
         // --- Event Listeners ---
         function setupEventListeners() {
+            // document.getElementById('editUserIdBtn').addEventListener('click', editUserId); // REMOVED
             document.querySelectorAll('.tab-button').forEach(button => button.addEventListener('click', () => switchTab(button.dataset.tab)));
             document.getElementById('addTaskBtn').addEventListener('click', () => performProtectedTaskAction(() => openTaskModal(null)));
             document.getElementById('addLeaveBtn').addEventListener('click', () => openLeaveModal(null));
@@ -1288,8 +1294,18 @@
                     releaseContent += `<div class="release-badge" title="${r.name} (Click to delete)" onclick="handleDeleteReleaseWrapper('${r.id}')"><i class="fas fa-rocket mr-1"></i>${r.name}</div>`;
                 });
 
+                // Find all leaves for this day
                 const leavesOnThisDay = (allLeaves || []).filter(l => new Date(l.startDate.replace(/-/g, '\/')) <= currentDate && currentDate <= new Date(l.endDate.replace(/-/g, '\/')));
                 
+                // Filter Logic: If user has MEP_holiday, hide other leaves
+                const usersWithMEP = new Set(leavesOnThisDay.filter(l => l.reason === 'MEP_holiday').map(l => l.userId));
+                const leavesToDisplay = leavesOnThisDay.filter(l => {
+                    if (usersWithMEP.has(l.userId)) {
+                        return l.reason === 'MEP_holiday';
+                    }
+                    return true;
+                });
+
                 let dayContent = `
                     <div class="flex flex-col h-full">
                         <div class="flex justify-between items-start">
@@ -1300,9 +1316,9 @@
                         </div>
                 `;
                 
-                if (leavesOnThisDay.length > 0) {
+                if (leavesToDisplay.length > 0) {
                     dayContent += '<div class="mt-1 space-y-1 px-1 grow">';
-                    leavesOnThisDay.forEach(leave => {
+                    leavesToDisplay.forEach(leave => {
                         let colorClass = 'bg-blue-100 text-blue-800'; // Default Pending
                         if (leave.reason === 'MEP_holiday') {
                              colorClass = 'bg-purple-100 text-purple-800';
@@ -2048,60 +2064,117 @@
 
         function exportLeavesToExcel() {
             const year = currentCalendarDate.getFullYear();
-            const month = currentCalendarDate.getMonth(); // 0-indexed
+            const month = currentCalendarDate.getMonth();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
             const monthName = currentCalendarDate.toLocaleString('default', { month: 'long' });
 
-            // 1. Prepare Header Row
-            const headerRow = ['Team Member'];
+            // Initialize Worksheet
+            const ws = {};
+            const merges = [];
+            const colWidths = [{ wch: 25 }]; // Team Member col
+
+            // Helper to add cell
+            function addCell(r, c, val, style = {}) {
+                const ref = XLSX.utils.encode_cell({r, c});
+                ws[ref] = { t: 's', v: val, s: style };
+            }
+
+            // --- Row 0: Title ---
+            addCell(0, 0, `Leave Report - ${monthName} ${year}`, { font: { bold: true, sz: 14 } });
+            merges.push({ s: { r: 0, c: 0 }, e: { r: 0, c: daysInMonth } }); // Merge title across
+
+            // --- Row 1: CW Header ---
+            addCell(1, 0, "CW", { font: { bold: true }, alignment: { horizontal: "center" }, fill: { fgColor: { rgb: "E2E8F0" } } });
+            let currentCW = null;
+            let cwStartCol = 1;
+            
             for (let i = 1; i <= daysInMonth; i++) {
                 const d = new Date(year, month, i);
-                const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
-                headerRow.push(`${i} (${dayName})`);
+                const cw = getWeekNumber(d);
+                const colIdx = i;
+
+                const cwStyle = { font: { bold: true }, alignment: { horizontal: "center" }, fill: { fgColor: { rgb: "E2E8F0" } } };
+
+                if (cw !== currentCW) {
+                    if (currentCW !== null) {
+                        merges.push({ s: { r: 1, c: cwStartCol }, e: { r: 1, c: colIdx - 1 } });
+                    }
+                    currentCW = cw;
+                    cwStartCol = colIdx;
+                    addCell(1, colIdx, `CW ${cw}`, cwStyle);
+                } else {
+                    addCell(1, colIdx, `CW ${cw}`, cwStyle);
+                }
+                
+                if (i === daysInMonth) {
+                     merges.push({ s: { r: 1, c: cwStartCol }, e: { r: 1, c: daysInMonth } });
+                }
+                colWidths.push({ wch: 20 });
             }
 
-            // 2. Prepare Release Row
-            const releaseRow = ['Release Plan'];
+            // --- Row 2: Days Header ---
+            addCell(2, 0, "Team Member", { font: { bold: true }, border: { bottom: { style: "thin" } } });
+            
+            for (let i = 1; i <= daysInMonth; i++) {
+                const d = new Date(year, month, i);
+                const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+                const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+                
+                let style = { font: { bold: true }, alignment: { horizontal: "center" }, border: { bottom: { style: "thin" } } };
+                if (isWeekend) {
+                    style.fill = { fgColor: { rgb: "F1F5F9" } }; // Light grey
+                }
+                
+                addCell(2, i, `${i} (${dayName})`, style);
+            }
+
+            // --- Row 3: Release Plan ---
+            addCell(3, 0, "Release Plan", { font: { bold: true, color: { rgb: "E11D48" } } });
+            
             for (let i = 1; i <= daysInMonth; i++) {
                 const currentDate = new Date(year, month, i);
-                // Check releases
+                currentDate.setHours(0,0,0,0);
+                
                 const activeReleases = allReleases.filter(r => {
-                    const start = new Date(r.startDate.replace(/-/g, '\/'));
-                    const end = new Date(r.endDate.replace(/-/g, '\/'));
-                    // Reset times to compare dates only
-                    start.setHours(0,0,0,0);
-                    end.setHours(0,0,0,0);
-                    currentDate.setHours(0,0,0,0);
-                    return currentDate >= start && currentDate <= end;
+                     const start = new Date(r.startDate.replace(/-/g, '\/'));
+                     const end = new Date(r.endDate.replace(/-/g, '\/'));
+                     start.setHours(0,0,0,0);
+                     end.setHours(0,0,0,0);
+                     return currentDate >= start && currentDate <= end;
                 });
+
+                let style = { alignment: { wrapText: true, vertical: "top" } };
+                let val = "";
                 
                 if (activeReleases.length > 0) {
-                    releaseRow.push(activeReleases.map(r => r.name).join(', '));
-                } else {
-                    releaseRow.push('');
+                    val = activeReleases.map(r => r.name).join(', ');
+                    style.fill = { fgColor: { rgb: "FFE4E6" } }; // Rose 100
+                    style.font = { color: { rgb: "9F1239" } }; // Rose 800
                 }
+                
+                if (!val && (currentDate.getDay() === 0 || currentDate.getDay() === 6)) {
+                     style.fill = { fgColor: { rgb: "F1F5F9" } };
+                }
+
+                addCell(3, i, val, style);
             }
 
-            // 3. Prepare Member Rows
-            const memberRows = [];
-            // Sort members alphabetically
+            // --- Row 4+: Users ---
             const sortedMembers = [...teamMembers].sort((a, b) => a.name.localeCompare(b.name));
-            
-            // Also include members who have leaves but might have been deleted from teamMembers list (edge case)
             const distinctLeaveUsers = [...new Set(allLeaves.map(l => l.userId))];
             distinctLeaveUsers.forEach(u => {
-                if (!sortedMembers.find(m => m.name === u)) {
-                    sortedMembers.push({ name: u });
-                }
+                if (!sortedMembers.find(m => m.name === u)) sortedMembers.push({ name: u });
             });
 
+            let currentRow = 4;
             sortedMembers.forEach(member => {
-                const row = [member.name];
+                addCell(currentRow, 0, member.name, { font: { bold: true } });
+
                 for (let i = 1; i <= daysInMonth; i++) {
                     const currentDate = new Date(year, month, i);
                     currentDate.setHours(0,0,0,0);
+                    const isWeekend = currentDate.getDay() === 0 || currentDate.getDay() === 6;
 
-                    // Find overlapping leaves
                     const activeLeaves = allLeaves.filter(l => {
                         if (l.userId !== member.name) return false;
                         const start = new Date(l.startDate.replace(/-/g, '\/'));
@@ -2110,33 +2183,44 @@
                         end.setHours(0,0,0,0);
                         return currentDate >= start && currentDate <= end;
                     });
+                    
+                    let leaveToDisplay = activeLeaves.find(l => l.reason === 'MEP_holiday');
+                    if (!leaveToDisplay && activeLeaves.length > 0) leaveToDisplay = activeLeaves[0];
 
-                    if (activeLeaves.length > 0) {
-                        // Join reasons if multiple (rare but possible)
-                        row.push(activeLeaves.map(l => l.reason).join(', '));
-                    } else {
-                        row.push('');
+                    let val = "";
+                    let style = { alignment: { wrapText: true, horizontal: "center", vertical: "center" } };
+
+                    if (leaveToDisplay) {
+                        const status = leaveToDisplay.reason === 'MEP_holiday' ? 'Holiday' : (leaveToDisplay.status || 'Pending');
+                        val = leaveToDisplay.reason;
+                        if (leaveToDisplay.reason !== 'MEP_holiday') {
+                             val += ` (${status})`;
+                        }
+
+                        if (leaveToDisplay.reason === 'MEP_holiday') {
+                            style.fill = { fgColor: { rgb: "F3E8FF" } }; // Purple 100
+                            style.font = { color: { rgb: "6B21A8" } }; // Purple 800
+                        } else if (status === 'Approved') {
+                            style.fill = { fgColor: { rgb: "15803D" } }; // Green 700
+                            style.font = { color: { rgb: "FFFFFF" } }; // White
+                        } else {
+                            style.fill = { fgColor: { rgb: "DBEAFE" } }; // Blue 100
+                            style.font = { color: { rgb: "1E40AF" } }; // Blue 800
+                        }
+                    } else if (isWeekend) {
+                         style.fill = { fgColor: { rgb: "F1F5F9" } };
                     }
+
+                    addCell(currentRow, i, val, style);
                 }
-                memberRows.push(row);
+                currentRow++;
             });
 
-            // 4. Combine all data
-            const wsData = [
-                [`Leave Report - ${monthName} ${year}`], // Title
-                [], // Empty row
-                headerRow,
-                releaseRow,
-                ...memberRows
-            ];
-
-            // 5. Create Sheet
-            const ws = XLSX.utils.aoa_to_sheet(wsData);
-
-            // Adjust column widths
-            const wscols = [{ wch: 20 }]; // First column width
-            for (let i = 0; i < daysInMonth; i++) wscols.push({ wch: 5 }); // Day columns narrow
-            ws['!cols'] = wscols;
+            // Finalize
+            const range = { s: { r: 0, c: 0 }, e: { r: currentRow - 1, c: daysInMonth } };
+            ws['!ref'] = XLSX.utils.encode_range(range);
+            ws['!merges'] = merges;
+            ws['!cols'] = colWidths;
 
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Monthly Calendar");
