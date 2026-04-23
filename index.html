@@ -167,7 +167,7 @@
                 </div>
             </div>
 
-            <!-- Utilized Hrs Tab (Updated) -->
+            <!-- Utilized Hrs Tab -->
             <div id="utilized-hrs-content" class="tab-content">
                 <div class="bg-white p-6 rounded-xl shadow-md">
                     <div class="flex justify-between items-center mb-4">
@@ -329,7 +329,7 @@
                     <div>
                         <label for="taskAssignee" class="block text-slate-600 text-sm font-bold mb-2">Assign To</label>
                         <select id="taskAssignee" class="shadow-sm appearance-none border border-slate-300 rounded-lg w-full py-2 px-3 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
-                           <!-- Options will be populated by JS -->
+                            <!-- Options will be populated by JS -->
                         </select>
                     </div>
                     <div>
@@ -349,7 +349,7 @@
         </div>
     </div>
     
-    <!-- Daily Allocation Modal (New) -->
+    <!-- Daily Allocation Modal -->
     <div id="allocationModal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50 p-4">
         <div class="bg-white rounded-xl shadow-2xl p-8 w-full max-w-sm m-4 transform transition-transform scale-95">
             <h2 class="text-xl font-bold mb-2 text-slate-800">Daily Allocation</h2>
@@ -361,6 +361,11 @@
                 <div class="mb-4">
                     <label for="alloc5050" class="block text-slate-600 text-sm font-bold mb-2 text-teal-600">Project 5050 (%)</label>
                     <input type="number" id="alloc5050" min="0" max="100" class="shadow-sm appearance-none border border-slate-300 rounded-lg w-full py-2 px-3 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="0">
+                </div>
+                <!-- ADDED: Project 5051 -->
+                <div class="mb-4">
+                    <label for="alloc5051" class="block text-slate-600 text-sm font-bold mb-2 text-blue-600">Project 5051 (%)</label>
+                    <input type="number" id="alloc5051" min="0" max="100" class="shadow-sm appearance-none border border-slate-300 rounded-lg w-full py-2 px-3 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="0">
                 </div>
                 <div class="mb-6">
                     <label for="alloc5053" class="block text-slate-600 text-sm font-bold mb-2 text-purple-600">Project 5053 (%)</label>
@@ -401,7 +406,7 @@
         </div>
     </div>
 
-    <!-- Metrics Modal (New) -->
+    <!-- Metrics Modal -->
     <div id="metricsModal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50 p-4">
         <div class="bg-white rounded-xl shadow-2xl p-8 w-full max-w-2xl m-4 transform transition-transform scale-95 max-h-[90vh] overflow-y-auto">
             <h2 id="metricsModalTitle" class="text-2xl font-bold mb-6 text-slate-800">Add Test Suite Metric</h2>
@@ -636,7 +641,6 @@
         // --- App Initialization ---
         document.addEventListener('DOMContentLoaded', () => {
             if (!db) return; 
-            // initializeUser(); // REMOVED
             setupEventListeners();
             loadTeamMembers();
             updateWeekView();
@@ -646,9 +650,6 @@
             loadAllocations(); // New
             updateLockIcon();
         });
-
-        // --- User Initialization ---
-        // Removed initializeUser and editUserId functions as they relied on removed DOM elements
 
         // --- Firestore Collections ---
         const getTasksCollection = () => collection(db, `apps/${appId}/tasks`);
@@ -660,7 +661,6 @@
 
         // --- Event Listeners ---
         function setupEventListeners() {
-            // document.getElementById('editUserIdBtn').addEventListener('click', editUserId); // REMOVED
             document.querySelectorAll('.tab-button').forEach(button => button.addEventListener('click', () => switchTab(button.dataset.tab)));
             document.getElementById('addTaskBtn').addEventListener('click', () => performProtectedTaskAction(() => openTaskModal(null)));
             document.getElementById('addLeaveBtn').addEventListener('click', () => openLeaveModal(null));
@@ -807,7 +807,6 @@
             return Math.ceil((pastDaysOfYear + firstDay + 1) / 7);
         }
 
-
         function updateWeekView() {
             if (!currentUserId) return;
             const weekStart = new Date(currentWeekStartDate);
@@ -839,6 +838,14 @@
             const q = query(getTasksCollection(), where("taskDate", ">=", formatDate(startDate)), where("taskDate", "<=", formatDate(endDate)));
             tasksUnsubscribe = onSnapshot(q, (snapshot) => {
                 weeklyTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                // Sort tasks chronologically by creation time so they appear serially
+                weeklyTasks.sort((a, b) => {
+                    const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                    const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                    return timeA - timeB;
+                });
+
                 renderTaskGrid(weeklyTasks, allLeaves, startDate);
                 renderWeeklyCountData(weeklyTasks, teamMembers, startDate);
                 renderUtilizedHours(weeklyTasks, teamMembers, startDate); // Render new table
@@ -904,6 +911,7 @@
                             // Project Highlighting Logic
                             let projectClass = "text-slate-500 font-semibold";
                             if (task.project && task.project.includes('5050')) projectClass = "text-teal-600 font-bold";
+                            else if (task.project && task.project.includes('5051')) projectClass = "text-blue-600 font-bold"; // Added 5051
                             else if (task.project && task.project.includes('5053')) projectClass = "text-purple-600 font-bold";
 
                             const projectDisplay = task.project ? `<div class="text-xs ${projectClass}">${task.project}</div>` : '';
@@ -928,7 +936,7 @@
                         const alloc = allAllocations.find(a => a.userId === assignee && a.date === dayString);
                         let allocHtml = '<span class="text-slate-300 italic">Effort: -</span>';
                         if (alloc) {
-                            allocHtml = `<span class="text-xs font-semibold text-teal-600">5050: ${alloc.p5050}%</span>, <span class="text-xs font-semibold text-purple-600">5053: ${alloc.p5053}%</span>`;
+                            allocHtml = `<span class="text-xs font-semibold text-teal-600">5050: ${alloc.p5050 || 0}%</span>, <span class="text-xs font-semibold text-blue-600">5051: ${alloc.p5051 || 0}%</span>, <span class="text-xs font-semibold text-purple-600">5053: ${alloc.p5053 || 0}%</span>`;
                         }
 
                         bodyHtml += `</div>
@@ -943,7 +951,6 @@
             });
             taskGridEl.innerHTML = headerHtml + bodyHtml;
         }
-
 
         async function handleTaskFormSubmit(e) {
             e.preventDefault();
@@ -1028,7 +1035,7 @@
             openModal('task');
         }
         
-        // --- Allocation Logic (New) ---
+        // --- Allocation Logic ---
         function loadAllocations() {
             if (allocationsUnsubscribe) allocationsUnsubscribe();
             const q = query(getAllocationsCollection());
@@ -1048,6 +1055,7 @@
             document.getElementById('allocId').value = allocation ? allocation.id : '';
             document.getElementById('allocModalDateDisplay').textContent = `${userId} - ${date}`;
             document.getElementById('alloc5050').value = allocation ? allocation.p5050 : '';
+            document.getElementById('alloc5051').value = allocation ? allocation.p5051 : ''; // Load 5051
             document.getElementById('alloc5053').value = allocation ? allocation.p5053 : '';
             openModal('allocation');
         }
@@ -1058,9 +1066,10 @@
             const userId = document.getElementById('allocUser').value;
             const date = document.getElementById('allocDate').value;
             const p5050 = parseInt(document.getElementById('alloc5050').value) || 0;
+            const p5051 = parseInt(document.getElementById('alloc5051').value) || 0; // Capture 5051
             const p5053 = parseInt(document.getElementById('alloc5053').value) || 0;
 
-            const data = { userId, date, p5050, p5053, updatedAt: new Date().toISOString() };
+            const data = { userId, date, p5050, p5051, p5053, updatedAt: new Date().toISOString() };
 
             try {
                 if (id) {
@@ -1551,14 +1560,14 @@
             container.innerHTML = tableHtml;
         }
 
-        // --- Weekly Utilized Hours Logic (New) ---
+        // --- Weekly Utilized Hours Logic ---
         function renderUtilizedHours(tasks, members, weekStartDate) {
             const container = document.getElementById('utilizedHrsTableContainer');
             if (!container) return;
 
             const days = Array.from({ length: 7 }, (_, i) => new Date(weekStartDate.getFullYear(), weekStartDate.getMonth(), weekStartDate.getDate() + i));
             
-            // Structure: { MemberName: { DateString: { p5050: number, p5053: number } } }
+            // Structure: { MemberName: { DateString: { p5050: number, p5051: number, p5053: number } } }
             const utilization = {};
             members.forEach(m => utilization[m.name] = {});
 
@@ -1567,6 +1576,7 @@
                 if (utilization[alloc.userId]) {
                     utilization[alloc.userId][alloc.date] = { 
                         p5050: alloc.p5050 || 0, 
+                        p5051: alloc.p5051 || 0, // Added 5051 support
                         p5053: alloc.p5053 || 0 
                     };
                 }
@@ -1601,10 +1611,12 @@
                         
                         if (dayData) {
                             const hrs5050 = (dayData.p5050 / 100) * 8.5;
+                            const hrs5051 = (dayData.p5051 / 100) * 8.5; // Added 5051
                             const hrs5053 = (dayData.p5053 / 100) * 8.5;
-                            const totalHours = hrs5050 + hrs5053;
+                            const totalHours = hrs5050 + hrs5051 + hrs5053; // Included hrs5051
 
                             if (hrs5050 > 0) cellContent += `<div class="text-xs text-teal-600 font-semibold">5050: ${hrs5050.toFixed(1)}h</div>`;
+                            if (hrs5051 > 0) cellContent += `<div class="text-xs text-blue-600 font-semibold">5051: ${hrs5051.toFixed(1)}h</div>`; // Added rendering 5051
                             if (hrs5053 > 0) cellContent += `<div class="text-xs text-purple-600 font-semibold">5053: ${hrs5053.toFixed(1)}h</div>`;
                             
                             if (totalHours > 0) {
@@ -1626,7 +1638,7 @@
             container.innerHTML = tableHtml;
         }
 
-        // --- Export Utilized Hours Logic (New) ---
+        // --- Export Utilized Hours Logic ---
         function exportUtilizedHoursToExcel() {
             const days = Array.from({ length: 7 }, (_, i) => new Date(currentWeekStartDate.getFullYear(), currentWeekStartDate.getMonth(), currentWeekStartDate.getDate() + i));
             
@@ -1637,6 +1649,7 @@
                 if (utilization[alloc.userId]) {
                     utilization[alloc.userId][alloc.date] = { 
                         p5050: alloc.p5050 || 0, 
+                        p5051: alloc.p5051 || 0, // Ensure 5051 works in export
                         p5053: alloc.p5053 || 0 
                     };
                 }
@@ -1659,11 +1672,13 @@
                         const dayData = utilization[member.name]?.[dayString];
                         if (dayData) {
                             const hrs5050 = (dayData.p5050 / 100) * 8.5;
+                            const hrs5051 = (dayData.p5051 / 100) * 8.5; // Added 5051 calculation
                             const hrs5053 = (dayData.p5053 / 100) * 8.5;
-                            const totalHours = hrs5050 + hrs5053;
+                            const totalHours = hrs5050 + hrs5051 + hrs5053; // Included 5051
                             
                             let cellText = "";
                             if (hrs5050 > 0) cellText += `5050: ${hrs5050.toFixed(1)}h\n`;
+                            if (hrs5051 > 0) cellText += `5051: ${hrs5051.toFixed(1)}h\n`; // Export string 5051
                             if (hrs5053 > 0) cellText += `5053: ${hrs5053.toFixed(1)}h\n`;
                             if (totalHours > 0) cellText += `Total: ${totalHours.toFixed(1)}h`;
                             row.push(cellText.trim());
