@@ -95,6 +95,21 @@
         .weekend-day {
             background-color: #f1f5f9; /* Slate 100 */
         }
+        /* Custom File Input */
+        .file-upload-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+        .file-upload-wrapper input[type=file] {
+            font-size: 100px;
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            cursor: pointer;
+            height: 100%;
+        }
     </style>
 </head>
 <body class="antialiased text-slate-800">
@@ -103,8 +118,8 @@
         <!-- Header -->
         <header class="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center">
             <div>
-                <h1 class="text-3xl font-bold text-slate-900">Team Task & Leave Tracker</h1>
-                <p class="text-slate-500 mt-1">Your team's central hub for tasks, availability, and metrics.</p>
+                <h1 class="text-3xl font-bold text-slate-900">Unified Engineering Tracker</h1>
+                <p class="text-slate-500 mt-1">Your team's central hub for tasks, availability, and Windchill traceability.</p>
                 <p class="text-xs text-slate-300 mt-1 font-mono italic">-P.B</p>
             </div>
             <div class="mt-4 sm:mt-0 flex items-start space-x-4">
@@ -133,6 +148,10 @@
                     </button>
                     <button class="tab-button group inline-flex items-center py-4 px-1 border-b-2 font-semibold text-sm text-slate-500 border-transparent hover:text-slate-700 hover:border-slate-300" data-tab="metrics">
                         <i class="fas fa-chart-pie mr-2 text-slate-400 group-hover:text-slate-500"></i>Test Suite Metrics
+                    </button>
+                    <!-- NEW: Traceability Suite Tab -->
+                    <button class="tab-button group inline-flex items-center py-4 px-1 border-b-2 font-semibold text-sm text-slate-500 border-transparent hover:text-slate-700 hover:border-slate-300" data-tab="traceability">
+                        <i class="fas fa-network-wired mr-2 text-slate-400 group-hover:text-slate-500"></i>Traceability Suite
                     </button>
                 </nav>
             </div>
@@ -277,6 +296,129 @@
                 </div>
             </div>
 
+            <!-- NEW: Traceability Suite Tab -->
+            <div id="traceability-content" class="tab-content">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    
+                    <!-- Left Column: Settings & Configs -->
+                    <div class="space-y-6 lg:col-span-4">
+                        
+                        <!-- PTC Credentials Section -->
+                        <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-indigo-500">
+                            <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center">
+                                <i class="fas fa-shield-halved mr-2 text-indigo-500"></i> PTC Windchill Credentials
+                            </h3>
+                            <p class="text-xs text-slate-500 mb-4">Required to securely connect and extract SRD/TS data via the backend Python engine.</p>
+                            
+                            <form id="ptcCredsForm" class="space-y-4">
+                                <div>
+                                    <label class="block text-slate-600 text-sm font-bold mb-1">Username</label>
+                                    <input type="text" id="ptcUsername" class="shadow-sm appearance-none border border-slate-300 rounded-lg w-full py-2 px-3 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="e.g., jdoe" required>
+                                </div>
+                                <div>
+                                    <label class="block text-slate-600 text-sm font-bold mb-1">Password</label>
+                                    <input type="password" id="ptcPassword" class="shadow-sm appearance-none border border-slate-300 rounded-lg w-full py-2 px-3 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="••••••••" required>
+                                </div>
+                                <button type="submit" class="w-full bg-slate-100 hover:bg-slate-200 text-indigo-600 font-bold py-2 px-4 rounded-lg transition-colors border border-slate-200">
+                                    <i class="fas fa-save mr-2"></i>Save Credentials
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- File Upload Section -->
+                        <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-teal-500">
+                            <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center">
+                                <i class="fas fa-file-excel mr-2 text-teal-500"></i> Configuration Uploads
+                            </h3>
+                            <p class="text-xs text-slate-500 mb-4">Upload the target mapping files defining which features, SRDs, and TS IDs to audit.</p>
+                            
+                            <div class="space-y-4">
+                                <!-- SRD File -->
+                                <div class="border-2 border-dashed border-slate-300 rounded-lg p-4 text-center hover:bg-slate-50 transition-colors">
+                                    <div class="file-upload-wrapper w-full">
+                                        <button class="text-teal-600 font-semibold text-sm">
+                                            <i class="fas fa-upload mr-1"></i> Upload Feature_SRD_ID.xlsx
+                                        </button>
+                                        <input type="file" accept=".xlsx, .xls" id="uploadSrdBtn" onchange="document.getElementById('srdFileName').textContent = this.files[0].name">
+                                    </div>
+                                    <p id="srdFileName" class="text-xs text-slate-400 mt-2">No file chosen</p>
+                                </div>
+                                
+                                <!-- TS File -->
+                                <div class="border-2 border-dashed border-slate-300 rounded-lg p-4 text-center hover:bg-slate-50 transition-colors">
+                                    <div class="file-upload-wrapper w-full">
+                                        <button class="text-teal-600 font-semibold text-sm">
+                                            <i class="fas fa-upload mr-1"></i> Upload Feature_TS_ID.xlsx
+                                        </button>
+                                        <input type="file" accept=".xlsx, .xls" id="uploadTsBtn" onchange="document.getElementById('tsFileName').textContent = this.files[0].name">
+                                    </div>
+                                    <p id="tsFileName" class="text-xs text-slate-400 mt-2">No file chosen</p>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Right Column: Analysis Actions -->
+                    <div class="space-y-6 lg:col-span-8">
+                        
+                        <!-- 1. Req Gap Analysis -->
+                        <div class="bg-white p-6 rounded-xl shadow-md border-l-4 border-blue-500">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h3 class="text-xl font-bold text-slate-800 mb-2">Requirement Gap Analysis</h3>
+                                    <p class="text-sm text-slate-500 mb-4 max-w-2xl">
+                                        Programmatically scans System Requirement Documents (SRDs) to identify critical gaps where requirements lack <strong>"Validated By"</strong> links. Generates a consolidated output ensuring 100% testability for Bench and Vehicle tests.
+                                    </p>
+                                </div>
+                                <i class="fas fa-magnifying-glass-chart text-4xl text-blue-100"></i>
+                            </div>
+                            <button id="runReqGapBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg shadow transition-colors flex items-center">
+                                <i class="fas fa-play mr-2"></i> Run Req Gap Analysis
+                            </button>
+                        </div>
+
+                        <!-- 2. TS Gap Analysis -->
+                        <div class="bg-white p-6 rounded-xl shadow-md border-l-4 border-orange-500">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h3 class="text-xl font-bold text-slate-800 mb-2">Test Suite (TS) Attribute Gap Analysis</h3>
+                                    <p class="text-sm text-slate-500 mb-4 max-w-2xl">
+                                        Extracts thousands of test cases across features using nested retry logic to handle schema variations. Performs deep-data inspection to identify missing attributes (e.g., <strong>Category, Status</strong>) and generates styled <strong>"Heatmap"</strong> Excel reports highlighting gaps.
+                                    </p>
+                                </div>
+                                <i class="fas fa-table-cells text-4xl text-orange-100"></i>
+                            </div>
+                            <div class="flex space-x-3">
+                                <button id="runTsExportBtn" class="bg-slate-100 hover:bg-slate-200 text-orange-600 font-bold py-2 px-4 rounded-lg shadow-sm border border-slate-200 transition-colors flex items-center">
+                                    <i class="fas fa-download mr-2"></i> Export TS Only
+                                </button>
+                                <button id="runTsGapBtn" class="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-6 rounded-lg shadow transition-colors flex items-center">
+                                    <i class="fas fa-wand-magic-sparkles mr-2"></i> Run Attribute Analysis
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 3. TS Metrics Count -->
+                        <div class="bg-white p-6 rounded-xl shadow-md border-l-4 border-green-500">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h3 class="text-xl font-bold text-slate-800 mb-2">Test Suite Metrics Count Generation</h3>
+                                    <p class="text-sm text-slate-500 mb-4 max-w-2xl">
+                                        Analyzes exported Test Suites to generate a consolidated metrics report, counting test cases by category and specific statuses (e.g., <strong>reviewed, proposed, draft, rejected</strong>). Feeds data ready for your manual Test Suite Metrics tracker.
+                                    </p>
+                                </div>
+                                <i class="fas fa-chart-pie text-4xl text-green-100"></i>
+                            </div>
+                            <button id="runTsMetricsBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg shadow transition-colors flex items-center">
+                                <i class="fas fa-calculator mr-2"></i> Generate Metrics Count
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
         </main>
     </div>
 
@@ -362,7 +504,6 @@
                     <label for="alloc5050" class="block text-slate-600 text-sm font-bold mb-2 text-teal-600">Project 5050 (%)</label>
                     <input type="number" id="alloc5050" min="0" max="100" class="shadow-sm appearance-none border border-slate-300 rounded-lg w-full py-2 px-3 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="0">
                 </div>
-                <!-- ADDED: Project 5051 -->
                 <div class="mb-4">
                     <label for="alloc5051" class="block text-slate-600 text-sm font-bold mb-2 text-blue-600">Project 5051 (%)</label>
                     <input type="number" id="alloc5051" min="0" max="100" class="shadow-sm appearance-none border border-slate-300 rounded-lg w-full py-2 px-3 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="0">
@@ -705,6 +846,49 @@
             document.getElementById('allocationForm').addEventListener('submit', handleAllocationFormSubmit);
             // New Export Utilized Hours Listener
             document.getElementById('exportUtilizedBtn').addEventListener('click', exportUtilizedHoursToExcel);
+
+            // --- Traceability Suite Listeners (UI Simulation) ---
+            document.getElementById('ptcCredsForm')?.addEventListener('submit', handlePtcCredsSubmit);
+            document.getElementById('runReqGapBtn')?.addEventListener('click', () => simulatePythonAnalysis('runReqGapBtn', 'Requirement Gap Analysis', 'fa-play', 'L2H5053_ReqGap_Analysis.py output will be generated backend.'));
+            document.getElementById('runTsExportBtn')?.addEventListener('click', () => simulatePythonAnalysis('runTsExportBtn', 'TS Export Only', 'fa-download', 'L2H5053_TS_export_only.py export complete.'));
+            document.getElementById('runTsGapBtn')?.addEventListener('click', () => simulatePythonAnalysis('runTsGapBtn', 'TS Attribute Gap Analysis', 'fa-wand-magic-sparkles', 'L2H5053_TS_extract_analysis.py analysis complete.'));
+            document.getElementById('runTsMetricsBtn')?.addEventListener('click', () => simulatePythonAnalysis('runTsMetricsBtn', 'Test Suite Metrics Count Generation', 'fa-calculator', 'L2H5053_TS_extract_Metrics_Count.py metrics ready.'));
+        }
+
+        // --- UI Simulation for Traceability Suite (Python backend mock) ---
+        function handlePtcCredsSubmit(e) {
+            e.preventDefault();
+            const btn = e.target.querySelector('button[type="submit"]');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Saving...';
+            btn.disabled = true;
+            setTimeout(() => {
+                btn.innerHTML = '<i class="fas fa-check mr-2"></i> Saved';
+                btn.classList.replace('text-indigo-600', 'text-green-600');
+                btn.classList.replace('bg-slate-100', 'bg-green-50');
+                setTimeout(() => {
+                    btn.innerHTML = originalHtml;
+                    btn.classList.replace('text-green-600', 'text-indigo-600');
+                    btn.classList.replace('bg-green-50', 'bg-slate-100');
+                    btn.disabled = false;
+                }, 2000);
+            }, 800);
+        }
+
+        function simulatePythonAnalysis(buttonId, processName, iconClass, successMessage) {
+            const btn = document.getElementById(buttonId);
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Running...`;
+            btn.disabled = true;
+
+            // In a real application, this is where you would make an API call (e.g., fetch('/api/run-req-gap'))
+            // to your Python backend to execute the provided scripts (L2H5053_ReqGap_Analysis.py, etc.)
+            
+            setTimeout(() => {
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+                showAlert("Process Complete", `${processName} executed successfully. ${successMessage}`);
+            }, 2500);
         }
         
         // --- Password Check ---
