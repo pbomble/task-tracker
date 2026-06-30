@@ -47,6 +47,58 @@
             left: 0;
             z-index: 11;
         }
+        /* --- Excel-style inline task table --- */
+        #etTable {
+            border-collapse: collapse;
+            min-width: 2200px;
+            font-size: 0.8rem;
+        }
+        #etTable th, #etTable td {
+            border: 1px solid #e2e8f0;
+        }
+        #etTable thead th {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background-color: #f1f5f9;
+            font-weight: 700;
+            color: #475569;
+            padding: 4px 6px;
+        }
+        .et-assignee-col {
+            position: sticky;
+            left: 0;
+            z-index: 12;
+            background-color: #fff;
+            font-weight: 600;
+            min-width: 120px;
+            padding: 4px 8px;
+            vertical-align: top;
+        }
+        thead .et-assignee-col { z-index: 13; background-color: #f1f5f9; }
+        .et-cell {
+            padding: 3px 4px;
+            outline: none;
+            cursor: cell;
+            min-width: 32px;
+            white-space: pre-wrap;
+            word-break: break-word;
+            vertical-align: top;
+        }
+        .et-cell:focus { background-color: #eef2ff; box-shadow: inset 0 0 0 2px #6366f1; }
+        .et-cell.et-selected { background-color: #dbeafe; }
+        .et-col-c { width: 36px; text-align: center; text-transform: uppercase; font-weight: 600; color: #4338ca; }
+        .et-col-ct { width: 36px; text-align: center; color: #475569; }
+        .et-col-task { min-width: 140px; }
+        .et-col-s { width: 30px; text-align: center; font-weight: 700; }
+        .et-col-s[data-val="D"] { color: #16a34a; }
+        .et-col-s[data-val="P"] { color: #2563eb; }
+        .et-col-s[data-val="O"] { color: #d97706; }
+        .et-col-p { min-width: 110px; color: #475569; }
+        .et-leave-cell { background-color: #fef3c7; text-align: center; font-weight: 600; color: #92400e; padding: 6px; }
+        .et-add-row-btn { font-size: 0.65rem; color: #6366f1; cursor: pointer; padding: 2px 6px; }
+        .et-add-row-btn:hover { text-decoration: underline; }
+        .et-weekend { background-color: #f8fafc; }
         .task-card {
             transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
@@ -170,9 +222,19 @@
                             <i class="fas fa-file-excel mr-2"></i>Export
                         </button>
                     </div>
-                    <button id="addTaskBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg shadow-indigo-500/30 transition-transform transform hover:scale-105 mt-4 sm:mt-0">
-                        <i class="fas fa-plus mr-2"></i>Add New Task
-                    </button>
+                    <div class="flex items-center space-x-3 mt-4 sm:mt-0">
+                        <div class="hidden md:flex items-center text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 space-x-3">
+                            <span><b class="text-indigo-600">C</b>=Category</span>
+                            <span><b class="text-indigo-600">CT</b>=Count</span>
+                            <span><b class="text-indigo-600">S</b>=Status</span>
+                            <span class="text-slate-400">|</span>
+                            <span>C: T/M/N/RW/NS/RS/AD/EX/RA</span>
+                            <span>S: O/P/D</span>
+                        </div>
+                        <button id="addTaskBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg shadow-indigo-500/30 transition-transform transform hover:scale-105">
+                            <i class="fas fa-plus mr-2"></i>Detailed Add
+                        </button>
+                    </div>
                 </div>
                 <div id="taskGridContainer" class="overflow-x-auto bg-white rounded-xl shadow-md">
                      <div id="taskGrid" class="task-grid">
@@ -778,6 +840,18 @@
         let passwordPromiseResolve = null;
         let hiddenAssignees = new Set();
         const categoriesWithCount = ['New TCs', 'Rework TCs', 'New Script/Automation', 'Rework Script/Automation', 'Req Analysis', 'Automation_Dry_run', 'Execution'];
+
+        // --- Excel-style grid: code <-> full word maps ---
+        const CATEGORY_CODE_TO_FULL = { 'T':'Task','M':'Meeting','N':'New TCs','RW':'Rework TCs','NS':'New Script/Automation','RS':'Rework Script/Automation','AD':'Automation_Dry_run','EX':'Execution','RA':'Req Analysis' };
+        const CATEGORY_FULL_TO_CODE = Object.fromEntries(Object.entries(CATEGORY_CODE_TO_FULL).map(([k,v]) => [v,k]));
+        const STATUS_CODE_TO_FULL = { 'O':'To Do','P':'In Progress','D':'Done' };
+        const STATUS_FULL_TO_CODE = Object.fromEntries(Object.entries(STATUS_CODE_TO_FULL).map(([k,v]) => [v,k]));
+        const ET_COL_TYPES = ['c','ct','task','s','p']; // 5 sub-columns per day
+        let etExtraRows = {}; // { assignee: number of extra blank rows added in UI }
+        let etSelection = null; // {r1,c1,r2,c2} selection rectangle (table-wide row/col indices)
+        let etActiveCell = null; // last focused/clicked <td>
+        let etCellMap = {}; // "r,c" -> td element, rebuilt each render
+        let etSaveTimers = {}; // debounce timers keyed by "assignee|date|rowIdx"
         
         // --- App Initialization ---
         document.addEventListener('DOMContentLoaded', () => {
@@ -1036,12 +1110,14 @@
             }, (error) => { console.error("Error fetching tasks:", error); showAlert("Data Error", "Could not load tasks. Check your Firebase configuration and security rules."); });
         }
 
+        // --- New Excel-style inline editable Weekly Task table ---
         function renderTaskGrid(tasks, leaves, weekStartDate) {
             const taskGridEl = document.getElementById('taskGrid');
-            taskGridEl.innerHTML = '';
             const tasksByAssignee = tasks.reduce((acc, task) => { (acc[task.assignee || 'Unassigned'] = acc[task.assignee || 'Unassigned'] || []).push(task); return acc; }, {});
+            // Sort each assignee's day-tasks by creation time so row index stays stable across days
+            Object.values(tasksByAssignee).forEach(arr => arr.sort((a, b) => (a.createdAt||'').localeCompare(b.createdAt||'')));
             const assignees = [...new Set([...Object.keys(tasksByAssignee), ...teamMembers.map(m => m.name)])].sort();
-            
+
             const container = document.getElementById('taskGridContainer');
             const noTasksMessage = document.getElementById('no-tasks-message');
             if (assignees.length === 0) {
@@ -1051,97 +1127,275 @@
                 container.classList.remove('hidden');
                 noTasksMessage.classList.add('hidden');
             }
-            
-            let headerHtml = '<div class="grid-header assignee-cell bg-slate-50 p-3 text-sm font-semibold text-slate-600 text-left border-slate-200">Assignee</div>';
+
             const days = Array.from({ length: 7 }, (_, i) => new Date(weekStartDate.getFullYear(), weekStartDate.getMonth(), weekStartDate.getDate() + i));
-            days.forEach(day => { headerHtml += `<div class="grid-header bg-slate-50 p-3 text-sm font-semibold text-slate-600 text-center border-slate-200">${day.toLocaleDateString('en-US', { weekday: 'short' })}<br><span class="font-normal text-slate-500">${day.getDate()}</span></div>`; });
-            
+            const dayStrings = days.map(formatDate);
+
+            // --- Header ---
+            let headHtml = `<thead>
+                <tr>
+                    <th rowspan="2" class="et-assignee-col" style="left:0;">Assignee</th>`;
+            days.forEach(day => {
+                headHtml += `<th colspan="5" class="text-center">${day.toLocaleDateString('en-US',{weekday:'short'})}<br>${day.getDate()}</th>`;
+            });
+            headHtml += `</tr><tr>`;
+            days.forEach(() => {
+                headHtml += `<th class="et-col-c" title="Category">C</th><th class="et-col-ct" title="Count">CT</th><th class="et-col-task">Task</th><th class="et-col-s" title="Status">S</th><th class="et-col-p">Project,%,Hrs</th>`;
+            });
+            headHtml += `</tr></thead><tbody>`;
+
+            // --- Body ---
+            etCellMap = {};
+            let globalRowIdx = 0; // every <tr> gets a unique row index
             let bodyHtml = '';
+
             assignees.forEach(assignee => {
                 const isHidden = hiddenAssignees.has(assignee);
-                bodyHtml += `<div class="contents" data-assignee-row="${assignee}">`;
-                bodyHtml += `
-                    <div class="assignee-cell bg-white p-3 font-semibold text-slate-700 border-b border-r border-slate-200 flex items-center justify-between">
-                        <span>${assignee}</span>
-                        <button data-action="toggle-visibility" data-assignee="${assignee}" class="text-slate-400 hover:text-indigo-600 p-1">
-                            <i class="fas ${isHidden ? 'fa-eye' : 'fa-eye-slash'} pointer-events-none"></i>
-                        </button>
-                    </div>`;
+                // Determine number of task-rows to render for this assignee (max across days, min 1, plus any manually added extra rows)
+                let maxRows = 1;
+                dayStrings.forEach(ds => {
+                    const count = (tasksByAssignee[assignee] || []).filter(t => t.taskDate === ds).length;
+                    if (count > maxRows) maxRows = count;
+                });
+                maxRows += (etExtraRows[assignee] || 0);
+                if (isHidden) maxRows = 1;
 
-                days.forEach(day => {
-                    if (isHidden) {
-                        bodyHtml += `<div class="border-b border-slate-200 bg-slate-50"></div>`;
-                        return;
+                for (let rowIdx = 0; rowIdx < maxRows; rowIdx++) {
+                    bodyHtml += `<tr data-global-row="${globalRowIdx}">`;
+                    if (rowIdx === 0) {
+                        bodyHtml += `<td rowspan="${maxRows}" class="et-assignee-col">
+                            <div class="flex items-center justify-between">
+                                <span>${assignee}</span>
+                                <button data-action="toggle-visibility" data-assignee="${assignee}" class="text-slate-400 hover:text-indigo-600 px-1">
+                                    <i class="fas ${isHidden ? 'fa-eye' : 'fa-eye-slash'} pointer-events-none text-xs"></i>
+                                </button>
+                            </div>
+                            ${!isHidden ? `<div class="et-add-row-btn" data-action="add-row" data-assignee="${assignee}"><i class="fas fa-plus pointer-events-none"></i> row</div>` : ''}
+                        </td>`;
                     }
 
-                    const dayString = formatDate(day);
-                    const leaveForDay = (leaves || []).find(l => l.userId === assignee && new Date(l.startDate.replace(/-/g, '\/')) <= day && day <= new Date(l.endDate.replace(/-/g, '\/')));
-                    
-                    if (leaveForDay) {
-                        const leaveColors = {
-                            "Planned Leave": "bg-blue-100 text-blue-800", "Sick Leave": "bg-orange-100 text-orange-800",
-                            "Emergency Leave": "bg-violet-100 text-violet-800", "Medical Leave": "bg-green-100 text-green-800",
-                            "MEP_holiday": "bg-yellow-100 text-yellow-800"
-                        };
-                        const colorClasses = leaveColors[leaveForDay.reason] || 'bg-gray-100 text-gray-800';
-                        bodyHtml += `<div class="p-3 border-b border-slate-200 ${colorClasses} flex items-center justify-center text-sm font-semibold"><i class="fas fa-user-clock mr-2"></i> ${leaveForDay.reason}</div>`;
-                    } else {
-                        let tasksForDay = (tasksByAssignee[assignee] || []).filter(t => t.taskDate === dayString);
-                        
-                        // Sort tasks by project to group them together
-                        tasksForDay.sort((a, b) => {
-                            const projA = a.project || "";
-                            const projB = b.project || "";
-                            return projA.localeCompare(projB);
-                        });
+                    if (isHidden) {
+                        bodyHtml += `<td colspan="${days.length * 5}" class="bg-slate-50"></td>`;
+                        bodyHtml += `</tr>`;
+                        globalRowIdx++;
+                        continue;
+                    }
 
-                        bodyHtml += `<div class="p-2 border-b border-slate-200 space-y-2 bg-white flex flex-col justify-between h-full min-h-[120px]"><div>`;
-                        tasksForDay.forEach(task => {
-                            const statusColors = {"To Do": "border-amber-400", "In Progress": "border-blue-400", "Done": "border-green-400"};
-                            const countDisplay = task.count ? ` (${task.count})` : '';
-                            
-                            // Project Highlighting Logic
-                            let projectClass = "text-slate-500 font-semibold";
-                            if (task.project && task.project.includes('5050')) projectClass = "text-teal-600 font-bold";
-                            else if (task.project && task.project.includes('5051')) projectClass = "text-blue-600 font-bold"; // Added 5051
-                            else if (task.project && task.project.includes('5053')) projectClass = "text-purple-600 font-bold";
+                    days.forEach((day, dIdx) => {
+                        const dayString = dayStrings[dIdx];
+                        const leaveForDay = (leaves || []).find(l => l.userId === assignee && new Date(l.startDate.replace(/-/g,'\/')) <= day && day <= new Date(l.endDate.replace(/-/g,'\/')));
 
-                            const projectDisplay = task.project ? `<div class="text-xs ${projectClass}">${task.project}</div>` : '';
-
-                            bodyHtml += `
-                                <div class="task-card group bg-white p-3 rounded-lg shadow-sm border-l-4 ${statusColors[task.status]} mb-2" data-id="${task.id}">
-                                    <div class="flex justify-between items-start mb-1">
-                                        <div>
-                                            <span class="text-xs font-semibold text-slate-500">${task.category}</span>
-                                            ${projectDisplay}
-                                        </div>
-                                        <div class="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button data-action="edit" class="text-slate-400 hover:text-indigo-600"><i class="fas fa-pencil-alt fa-xs pointer-events-none"></i></button>
-                                            <button data-action="delete" class="text-slate-400 hover:text-red-600"><i class="fas fa-trash-alt fa-xs pointer-events-none"></i></button>
-                                        </div>
-                                    </div>
-                                    <p class="text-sm font-medium text-slate-800">${task.description}${countDisplay}</p>
-                                </div>`;
-                        });
-                        
-                        // Allocation Footer
-                        const alloc = allAllocations.find(a => a.userId === assignee && a.date === dayString);
-                        let allocHtml = '<span class="text-slate-300 italic">Effort: -</span>';
-                        if (alloc) {
-                            allocHtml = `<span class="text-xs font-semibold text-teal-600">5050: ${alloc.p5050 || 0}%</span>, <span class="text-xs font-semibold text-blue-600">5051: ${alloc.p5051 || 0}%</span>, <span class="text-xs font-semibold text-purple-600">5053: ${alloc.p5053 || 0}%</span>`;
+                        if (leaveForDay) {
+                            if (rowIdx === 0) {
+                                bodyHtml += `<td colspan="5" rowspan="${maxRows}" class="et-leave-cell"><i class="fas fa-user-clock mr-1"></i>${leaveForDay.reason}</td>`;
+                            }
+                            return;
                         }
 
-                        bodyHtml += `</div>
-                            <div class="mt-2 pt-2 border-t border-dashed border-slate-200 flex justify-between items-center text-xs allocation-footer">
-                                <div>${allocHtml}</div>
-                                <button data-action="edit-allocation" data-user="${assignee}" data-date="${dayString}" class="text-slate-400 hover:text-indigo-600"><i class="fas fa-pencil-alt"></i></button>
-                            </div>
-                        </div>`; // Close p-2 div
+                        const tasksForDay = (tasksByAssignee[assignee] || []).filter(t => t.taskDate === dayString);
+                        const task = tasksForDay[rowIdx] || null;
+                        const taskId = task ? task.id : '';
+                        const catCode = task ? (CATEGORY_FULL_TO_CODE[task.category] || '') : '';
+                        const statusCode = task ? (STATUS_FULL_TO_CODE[task.status] || '') : '';
+
+                        const baseAttrs = `data-assignee="${assignee}" data-date="${dayString}" data-rowidx="${rowIdx}" data-taskid="${taskId}"`;
+                        bodyHtml += `<td contenteditable="true" spellcheck="false" class="et-cell et-col-c" data-col="c" ${baseAttrs}>${catCode}</td>`;
+                        bodyHtml += `<td contenteditable="true" spellcheck="false" class="et-cell et-col-ct" data-col="ct" ${baseAttrs}>${task && task.count ? task.count : ''}</td>`;
+                        bodyHtml += `<td contenteditable="true" spellcheck="false" class="et-cell et-col-task" data-col="task" ${baseAttrs}>${task ? (task.description||'') : ''}</td>`;
+                        bodyHtml += `<td contenteditable="true" spellcheck="false" class="et-cell et-col-s" data-col="s" data-val="${statusCode}" ${baseAttrs}>${statusCode}</td>`;
+                        bodyHtml += `<td contenteditable="true" spellcheck="false" class="et-cell et-col-p" data-col="p" ${baseAttrs}>${task ? (task.project||'') : ''}</td>`;
+                    });
+
+                    bodyHtml += `</tr>`;
+                    globalRowIdx++;
+                }
+            });
+
+            taskGridEl.innerHTML = '';
+            const tableEl = document.createElement('table');
+            tableEl.id = 'etTable';
+            tableEl.innerHTML = headHtml + bodyHtml + '</tbody>';
+            taskGridEl.appendChild(tableEl);
+
+            // index cells for selection logic: r = tr index within tbody, c = column index (0 = assignee, 1..35 = day*5+type)
+            const trs = tableEl.querySelectorAll('tbody tr');
+            trs.forEach((tr, r) => {
+                let c = 0;
+                Array.from(tr.children).forEach(td => {
+                    if (td.classList.contains('et-cell')) {
+                        td.dataset.r = r; td.dataset.c = c;
+                        etCellMap[`${r},${c}`] = td;
+                    }
+                    c++;
+                });
+            });
+
+            setupEtSelection(tableEl);
+        }
+
+        // Map a non-editable assignee/leave merged cell out of selection counting; only et-cell elements participate.
+
+        function setupEtSelection(tableEl) {
+            let dragging = false;
+            tableEl.addEventListener('mousedown', (e) => {
+                const td = e.target.closest('.et-cell');
+                if (!td) return;
+                dragging = true;
+                etActiveCell = td;
+                etSelection = { r1: +td.dataset.r, c1: +td.dataset.c, r2: +td.dataset.r, c2: +td.dataset.c };
+                highlightEtSelection();
+            });
+            tableEl.addEventListener('mouseover', (e) => {
+                if (!dragging) return;
+                const td = e.target.closest('.et-cell');
+                if (!td || !etSelection) return;
+                etSelection.r2 = +td.dataset.r; etSelection.c2 = +td.dataset.c;
+                highlightEtSelection();
+            });
+            document.addEventListener('mouseup', () => { dragging = false; });
+
+            tableEl.addEventListener('focusin', (e) => {
+                const td = e.target.closest('.et-cell');
+                if (!td) return;
+                etActiveCell = td;
+                etSelection = { r1: +td.dataset.r, c1: +td.dataset.c, r2: +td.dataset.r, c2: +td.dataset.c };
+                highlightEtSelection();
+            });
+
+            tableEl.addEventListener('blur', (e) => {
+                const td = e.target.closest('.et-cell');
+                if (!td) return;
+                if (td.dataset.col === 'c') normalizeCodeCell(td, CATEGORY_CODE_TO_FULL);
+                if (td.dataset.col === 's') { normalizeCodeCell(td, STATUS_CODE_TO_FULL); td.dataset.val = td.textContent.trim().toUpperCase(); }
+                saveEtCellGroup(td);
+            }, true);
+
+            tableEl.addEventListener('keydown', (e) => {
+                const td = e.target.closest('.et-cell');
+                if (!td) return;
+                if (e.key === 'Enter') { e.preventDefault(); td.blur(); moveEtFocus(td, 1, 0); }
+                else if (e.key === 'Tab') { e.preventDefault(); td.blur(); moveEtFocus(td, 0, e.shiftKey ? -1 : 1); }
+                else if (e.key === 'Escape') { td.blur(); }
+            });
+        }
+
+        function moveEtFocus(td, dr, dc) {
+            const r = +td.dataset.r + dr, c = +td.dataset.c + dc;
+            const next = etCellMap[`${r},${c}`];
+            if (next) { next.focus(); placeCaretAtEnd(next); }
+        }
+        function placeCaretAtEnd(el) {
+            const range = document.createRange(); range.selectNodeContents(el); range.collapse(false);
+            const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
+        }
+
+        function highlightEtSelection() {
+            document.querySelectorAll('.et-cell.et-selected').forEach(td => td.classList.remove('et-selected'));
+            if (!etSelection) return;
+            const rMin = Math.min(etSelection.r1, etSelection.r2), rMax = Math.max(etSelection.r1, etSelection.r2);
+            const cMin = Math.min(etSelection.c1, etSelection.c2), cMax = Math.max(etSelection.c1, etSelection.c2);
+            for (let r = rMin; r <= rMax; r++) for (let c = cMin; c <= cMax; c++) {
+                const td = etCellMap[`${r},${c}`];
+                if (td) td.classList.add('et-selected');
+            }
+        }
+
+        function normalizeCodeCell(td, codeMap) {
+            const val = td.textContent.trim().toUpperCase();
+            td.textContent = (val && codeMap[val]) ? val : (val === '' ? '' : val); // keep as typed; invalid codes just won't map on save
+        }
+
+        // Build tab/newline separated text from current selection and write to clipboard
+        function copyEtSelection(e) {
+            if (!etSelection) return;
+            const rMin = Math.min(etSelection.r1, etSelection.r2), rMax = Math.max(etSelection.r1, etSelection.r2);
+            const cMin = Math.min(etSelection.c1, etSelection.c2), cMax = Math.max(etSelection.c1, etSelection.c2);
+            const rows = [];
+            for (let r = rMin; r <= rMax; r++) {
+                const rowVals = [];
+                for (let c = cMin; c <= cMax; c++) {
+                    const td = etCellMap[`${r},${c}`];
+                    rowVals.push(td ? td.textContent.trim() : '');
+                }
+                rows.push(rowVals.join('\t'));
+            }
+            const text = rows.join('\n');
+            if (text) {
+                e.clipboardData.setData('text/plain', text);
+                e.preventDefault();
+            }
+        }
+
+        function pasteEtSelection(e) {
+            if (!etActiveCell || !document.activeElement || !document.activeElement.closest('#etTable')) return;
+            const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+            if (!text) return;
+            e.preventDefault();
+            const startR = +etActiveCell.dataset.r, startC = +etActiveCell.dataset.c;
+            const rows = text.replace(/\r/g,'').split('\n').filter((row, idx, arr) => !(idx === arr.length - 1 && row === ''));
+            const touched = new Set();
+            rows.forEach((rowText, ri) => {
+                const cols = rowText.split('\t');
+                cols.forEach((val, ci) => {
+                    const td = etCellMap[`${startR + ri},${startC + ci}`];
+                    if (td) {
+                        td.textContent = val;
+                        if (td.dataset.col === 'c') normalizeCodeCell(td, CATEGORY_CODE_TO_FULL);
+                        if (td.dataset.col === 's') { normalizeCodeCell(td, STATUS_CODE_TO_FULL); td.dataset.val = td.textContent.trim().toUpperCase(); }
+                        touched.add(td);
                     }
                 });
-                bodyHtml += `</div>`;
             });
-            taskGridEl.innerHTML = headerHtml + bodyHtml;
+            touched.forEach(td => saveEtCellGroup(td));
+        }
+        document.addEventListener('copy', copyEtSelection);
+        document.addEventListener('paste', pasteEtSelection);
+
+        // Reads sibling cells of the same (assignee,date,rowIdx) group and saves/creates/deletes the task doc
+        function saveEtCellGroup(td) {
+            const { assignee, date, rowidx, taskid } = td.dataset;
+            if (!assignee || !date) return;
+            const key = `${assignee}|${date}|${rowidx}`;
+            if (etSaveTimers[key]) clearTimeout(etSaveTimers[key]);
+            etSaveTimers[key] = setTimeout(async () => {
+                const tr = td.closest('tr');
+                const group = Array.from(tr.querySelectorAll(`.et-cell[data-assignee="${CSS.escape(assignee)}"][data-date="${CSS.escape(date)}"][data-rowidx="${CSS.escape(rowidx)}"]`));
+                const getVal = (col) => (group.find(c => c.dataset.col === col)?.textContent || '').trim();
+                const catCode = getVal('c').toUpperCase();
+                const countVal = getVal('ct');
+                const descVal = getVal('task');
+                const statusCode = getVal('s').toUpperCase();
+                const projVal = getVal('p');
+
+                const isEmpty = !catCode && !countVal && !descVal && !statusCode && !projVal;
+                const existingId = taskid;
+
+                if (isEmpty) {
+                    if (existingId) {
+                        try { await deleteDoc(doc(getTasksCollection(), existingId)); } catch (err) { console.error(err); }
+                    }
+                    return;
+                }
+                if (!descVal) return; // need at least a task description before saving
+
+                const taskData = {
+                    assignee, taskDate: date,
+                    category: CATEGORY_CODE_TO_FULL[catCode] || catCode || 'Task',
+                    status: STATUS_CODE_TO_FULL[statusCode] || statusCode || 'To Do',
+                    count: countVal || null,
+                    description: descVal,
+                    project: projVal || '',
+                    updatedBy: currentUserId, updatedAt: new Date().toISOString()
+                };
+                try {
+                    if (existingId) {
+                        await updateDoc(doc(getTasksCollection(), existingId), taskData);
+                    } else {
+                        const newDoc = await addDoc(getTasksCollection(), { ...taskData, createdBy: currentUserId, createdAt: new Date().toISOString() });
+                        group.forEach(c => c.dataset.taskid = newDoc.id);
+                    }
+                } catch (err) { console.error('Error saving inline task cell:', err); showAlert('Save Error', 'Failed to save task cell.'); }
+            }, 400);
         }
 
         async function handleTaskFormSubmit(e) {
@@ -1180,6 +1434,13 @@
                     hiddenAssignees.add(assignee);
                 }
                 updateWeekView(); // Re-render the grid to reflect the change
+                return;
+            }
+
+            if (action === 'add-row') {
+                const assignee = button.dataset.assignee;
+                etExtraRows[assignee] = (etExtraRows[assignee] || 0) + 1;
+                renderTaskGrid(weeklyTasks, allLeaves, currentWeekStartDate);
                 return;
             }
             
