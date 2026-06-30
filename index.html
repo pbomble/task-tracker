@@ -7,7 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <!-- Switched to xlsx-js-style for color support in export -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
     <style>
         body {
@@ -47,6 +46,7 @@
             left: 0;
             z-index: 11;
         }
+        
         /* --- Excel-style inline task table --- */
         #etTable {
             border-collapse: collapse;
@@ -84,21 +84,47 @@
             white-space: pre-wrap;
             word-break: break-word;
             vertical-align: top;
+            position: relative;
         }
-        .et-cell:focus { background-color: #eef2ff; box-shadow: inset 0 0 0 2px #6366f1; }
+        .et-cell[contenteditable="true"]:focus { background-color: #eef2ff; box-shadow: inset 0 0 0 2px #6366f1; }
         .et-cell.et-selected { background-color: #dbeafe; }
-        .et-col-c { width: 36px; text-align: center; text-transform: uppercase; font-weight: 600; color: #4338ca; }
+        
+        /* Dropdown specific styling */
+        .et-col-c { width: 140px; text-align: left; font-weight: 600; color: #4338ca; padding: 0 !important; }
+        .et-col-s { width: 100px; text-align: left; font-weight: 700; padding: 0 !important; }
+        
+        .et-dropdown {
+            width: 100%;
+            height: 100%;
+            min-height: 24px;
+            background: transparent;
+            border: none;
+            outline: none;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            text-align: left;
+            cursor: pointer;
+            padding: 3px 6px;
+        }
+        .et-dropdown:focus {
+            background-color: #eef2ff;
+            box-shadow: inset 0 0 0 2px #6366f1;
+        }
+        
+        /* Apply colors to the selects based on their container's data-val */
+        .et-col-s[data-val="D"] select { color: #16a34a; }
+        .et-col-s[data-val="P"] select { color: #2563eb; }
+        .et-col-s[data-val="O"] select { color: #d97706; }
+
         .et-col-ct { width: 36px; text-align: center; color: #475569; }
         .et-col-task { min-width: 140px; }
-        .et-col-s { width: 30px; text-align: center; font-weight: 700; }
-        .et-col-s[data-val="D"] { color: #16a34a; }
-        .et-col-s[data-val="P"] { color: #2563eb; }
-        .et-col-s[data-val="O"] { color: #d97706; }
         .et-col-p { min-width: 110px; color: #475569; }
         .et-leave-cell { background-color: #fef3c7; text-align: center; font-weight: 600; color: #92400e; padding: 6px; }
         .et-add-row-btn { font-size: 0.65rem; color: #6366f1; cursor: pointer; padding: 2px 6px; }
         .et-add-row-btn:hover { text-decoration: underline; }
         .et-weekend { background-color: #f8fafc; }
+        
         .task-card {
             transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
@@ -114,7 +140,7 @@
         }
         /* Metrics Table Styles */
         .metrics-header {
-            background-color: #ffe4d6; /* Light orange matches image */
+            background-color: #ffe4d6; 
             border-color: #fed7aa;
         }
         .metrics-sub-header {
@@ -122,7 +148,7 @@
         }
         /* Release Plan Styles */
         .release-day {
-            background-color: #fff1f2; /* Light rose background for release days */
+            background-color: #fff1f2; 
             border: 1px solid #fecdd3;
         }
         .release-badge {
@@ -145,7 +171,7 @@
         }
         /* Weekend Style */
         .weekend-day {
-            background-color: #f1f5f9; /* Slate 100 */
+            background-color: #f1f5f9; 
         }
         /* Custom File Input */
         .file-upload-wrapper {
@@ -201,7 +227,7 @@
                     <button class="tab-button group inline-flex items-center py-4 px-1 border-b-2 font-semibold text-sm text-slate-500 border-transparent hover:text-slate-700 hover:border-slate-300" data-tab="metrics">
                         <i class="fas fa-chart-pie mr-2 text-slate-400 group-hover:text-slate-500"></i>Test Suite Metrics
                     </button>
-                    <!-- NEW: Traceability Suite Tab -->
+                    <!-- Traceability Suite Tab -->
                     <button class="tab-button group inline-flex items-center py-4 px-1 border-b-2 font-semibold text-sm text-slate-500 border-transparent hover:text-slate-700 hover:border-slate-300" data-tab="traceability">
                         <i class="fas fa-network-wired mr-2 text-slate-400 group-hover:text-slate-500"></i>Traceability Suite
                     </button>
@@ -224,12 +250,12 @@
                     </div>
                     <div class="flex items-center space-x-3 mt-4 sm:mt-0">
                         <div class="hidden md:flex items-center text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 space-x-3">
-                            <span><b class="text-indigo-600">C</b>=Category</span>
+                            <span><b class="text-indigo-600">C</b>=Category (Dropdown)</span>
                             <span><b class="text-indigo-600">CT</b>=Count</span>
-                            <span><b class="text-indigo-600">S</b>=Status</span>
+                            <span><b class="text-indigo-600">S</b>=Status (Dropdown)</span>
                             <span class="text-slate-400">|</span>
-                            <span>C: T/M/N/RW/NS/RS/AD/EX/RA</span>
-                            <span>S: O/P/D</span>
+                            <span>C: Task/Meeting/New TCs/etc.</span>
+                            <span>S: To Do/In Progress/Done</span>
                         </div>
                         <button id="addTaskBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg shadow-indigo-500/30 transition-transform transform hover:scale-105">
                             <i class="fas fa-plus mr-2"></i>Detailed Add
@@ -287,7 +313,7 @@
                         <button id="nextMonthBtn" class="p-2 rounded-full hover:bg-slate-100"><i class="fas fa-chevron-right"></i></button>
                     </div>
                     <div id="leaveCalendar" class="grid grid-cols-8 gap-1 text-center">
-                       <!-- Calendar will be dynamically inserted here -->
+                        <!-- Calendar will be dynamically inserted here -->
                     </div>
                 </div>
             </div>
@@ -358,7 +384,7 @@
                 </div>
             </div>
 
-            <!-- NEW: Traceability Suite Tab -->
+            <!-- Traceability Suite Tab -->
             <div id="traceability-content" class="tab-content">
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
                     
@@ -793,7 +819,6 @@
         </div>
     </div>
 
-
     <script type="module">
         // Firebase Imports
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -828,14 +853,14 @@
         let leavesUnsubscribe = null;
         let releasesUnsubscribe = null;
         let metricsUnsubscribe = null;
-        let allocationsUnsubscribe = null; // New
+        let allocationsUnsubscribe = null; 
         let currentWeekStartDate = getStartOfWeek(new Date());
         let currentCalendarDate = new Date();
         let weeklyTasks = []; 
         let allLeaves = [];
         let allReleases = [];
         let allMetrics = [];
-        let allAllocations = []; // New
+        let allAllocations = []; 
         let tasksUnlocked = false;
         let passwordPromiseResolve = null;
         let hiddenAssignees = new Set();
@@ -846,12 +871,14 @@
         const CATEGORY_FULL_TO_CODE = Object.fromEntries(Object.entries(CATEGORY_CODE_TO_FULL).map(([k,v]) => [v,k]));
         const STATUS_CODE_TO_FULL = { 'O':'To Do','P':'In Progress','D':'Done' };
         const STATUS_FULL_TO_CODE = Object.fromEntries(Object.entries(STATUS_CODE_TO_FULL).map(([k,v]) => [v,k]));
-        const ET_COL_TYPES = ['c','ct','task','s','p']; // 5 sub-columns per day
-        let etExtraRows = {}; // { assignee: number of extra blank rows added in UI }
-        let etSelection = null; // {r1,c1,r2,c2} selection rectangle (table-wide row/col indices)
-        let etActiveCell = null; // last focused/clicked <td>
-        let etCellMap = {}; // "r,c" -> td element, rebuilt each render
-        let etSaveTimers = {}; // debounce timers keyed by "assignee|date|rowIdx"
+        const ET_COL_TYPES = ['c','ct','task','s','p']; 
+        let etExtraRows = {}; 
+        let etSelection = null; 
+        let etActiveCell = null; 
+        let etCellMap = {}; 
+        let etSaveTimers = {}; 
+        
+        let pendingSaves = {}; // Tracks in-progress save Promises to prevent duplicate entries
         
         // --- App Initialization ---
         document.addEventListener('DOMContentLoaded', () => {
@@ -862,17 +889,17 @@
             loadLeaves();
             loadReleases(); 
             loadMetrics(); 
-            loadAllocations(); // New
+            loadAllocations(); 
             updateLockIcon();
         });
 
-        // --- Firestore Collections ---
+        // --- Firebase Collections ---
         const getTasksCollection = () => collection(db, `apps/${appId}/tasks`);
         const getLeavesCollection = () => collection(db, `apps/${appId}/leaves`);
         const getReleasesCollection = () => collection(db, `apps/${appId}/releases`);
         const getTeamCollection = () => collection(db, `apps/${appId}/team`);
         const getMetricsCollection = () => collection(db, `apps/${appId}/metrics`); 
-        const getAllocationsCollection = () => collection(db, `apps/${appId}/allocations`); // New
+        const getAllocationsCollection = () => collection(db, `apps/${appId}/allocations`);
 
         // --- Event Listeners ---
         function setupEventListeners() {
@@ -906,7 +933,7 @@
             document.getElementById('cancelPassword').addEventListener('click', handlePasswordCancel);
             document.getElementById('leaveReason').addEventListener('change', toggleLeaveUserSelection);
             
-            // --- Metrics Event Listeners ---
+            // Metrics Event Listeners
             document.getElementById('addMetricBtn').addEventListener('click', () => openMetricsModal(null));
             document.getElementById('cancelMetric').addEventListener('click', () => closeModal('metrics'));
             document.getElementById('metricsForm').addEventListener('submit', handleMetricsFormSubmit);
@@ -915,13 +942,12 @@
             document.querySelectorAll('.metric-input').forEach(input => input.addEventListener('input', calculateMetricTotal));
             document.querySelectorAll('.metric-auto-input').forEach(input => input.addEventListener('input', calculateAutomationPercent));
 
-            // --- Allocation Event Listeners ---
+            // Allocation Event Listeners
             document.getElementById('cancelAllocation').addEventListener('click', () => closeModal('allocation'));
             document.getElementById('allocationForm').addEventListener('submit', handleAllocationFormSubmit);
-            // New Export Utilized Hours Listener
             document.getElementById('exportUtilizedBtn').addEventListener('click', exportUtilizedHoursToExcel);
 
-            // --- Traceability Suite Listeners (Real Local Execution) ---
+            // Traceability Suite Listeners
             document.getElementById('ptcCredsForm')?.addEventListener('submit', handlePtcCredsSubmit);
             document.getElementById('runReqGapBtn')?.addEventListener('click', () => executeLocalScript('runReqGapBtn', 'reqgap', 'Requirement Gap Analysis'));
             document.getElementById('runTsExportBtn')?.addEventListener('click', () => executeLocalScript('runTsExportBtn', 'export', 'TS Export Only'));
@@ -929,7 +955,7 @@
             document.getElementById('runTsMetricsBtn')?.addEventListener('click', () => executeLocalScript('runTsMetricsBtn', 'metrics', 'Test Suite Metrics Count'));
         }
 
-        // --- UI Simulation for Traceability Suite (Python backend mock) ---
+        // --- UI Simulation for Traceability Suite ---
         function handlePtcCredsSubmit(e) {
             e.preventDefault();
             const btn = e.target.querySelector('button[type="submit"]');
@@ -954,10 +980,7 @@
             const originalHtml = btn.innerHTML;
             btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Launching...`;
             btn.disabled = true;
-
-            // Trigger the Custom Windows Protocol
             window.location.href = `ptc-trace://${scriptAlias}/`;
-            
             setTimeout(() => {
                 btn.innerHTML = originalHtml;
                 btn.disabled = false;
@@ -1038,21 +1061,6 @@
             }
         }
 
-        // --- Tab Switching ---
-        function switchTab(tabName) {
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            document.querySelectorAll('.tab-button').forEach(b => {
-                b.classList.remove('active-tab', 'text-indigo-600', 'border-indigo-500');
-                b.classList.add('text-slate-500', 'border-transparent');
-                b.querySelector('i').classList.remove('text-indigo-500');
-                b.querySelector('i').classList.add('text-slate-400');
-            });
-            document.getElementById(`${tabName}-content`).classList.add('active');
-            const button = document.querySelector(`.tab-button[data-tab="${tabName}"]`);
-            button.classList.add('active-tab', 'text-indigo-600', 'border-indigo-500');
-            button.querySelector('i').classList.add('text-indigo-500');
-        }
-
         // --- Date & Week Helpers ---
         function getStartOfWeek(d) { const date = new Date(d); const day = date.getDay(); const diff = date.getDate() - day + (day === 0 ? -6 : 1); return new Date(date.setDate(diff)); }
         function formatDate(date) { const year = date.getFullYear(); const month = (date.getMonth() + 1).toString().padStart(2, '0'); const day = date.getDate().toString().padStart(2, '0'); return `${year}-${month}-${day}`; }
@@ -1060,7 +1068,7 @@
         function getWeekNumber(d) {
             const date = new Date(d.getTime());
             const yearStart = new Date(date.getFullYear(), 0, 1);
-            const firstDay = yearStart.getDay(); // 0=Sunday, 1=Monday, ...
+            const firstDay = yearStart.getDay(); 
             const pastDaysOfYear = (date - yearStart) / 86400000;
             return Math.ceil((pastDaysOfYear + firstDay + 1) / 7);
         }
@@ -1080,7 +1088,6 @@
             loadTasksForWeek(weekStart, weekEnd);
         }
 
-        // --- Task Management ---
         function toggleTaskCount() {
             const category = document.getElementById('taskCategory').value;
             const countContainer = document.getElementById('taskCountContainer');
@@ -1097,7 +1104,6 @@
             tasksUnsubscribe = onSnapshot(q, (snapshot) => {
                 weeklyTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 
-                // Sort tasks chronologically by creation time so they appear serially
                 weeklyTasks.sort((a, b) => {
                     const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
                     const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
@@ -1106,7 +1112,7 @@
 
                 renderTaskGrid(weeklyTasks, allLeaves, startDate);
                 renderWeeklyCountData(weeklyTasks, teamMembers, startDate);
-                renderUtilizedHours(weeklyTasks, teamMembers, startDate); // Render new table
+                renderUtilizedHours(weeklyTasks, teamMembers, startDate);
             }, (error) => { console.error("Error fetching tasks:", error); showAlert("Data Error", "Could not load tasks. Check your Firebase configuration and security rules."); });
         }
 
@@ -1114,7 +1120,6 @@
         function renderTaskGrid(tasks, leaves, weekStartDate) {
             const taskGridEl = document.getElementById('taskGrid');
             const tasksByAssignee = tasks.reduce((acc, task) => { (acc[task.assignee || 'Unassigned'] = acc[task.assignee || 'Unassigned'] || []).push(task); return acc; }, {});
-            // Sort each assignee's day-tasks by creation time so row index stays stable across days
             Object.values(tasksByAssignee).forEach(arr => arr.sort((a, b) => (a.createdAt||'').localeCompare(b.createdAt||'')));
             const assignees = [...new Set([...Object.keys(tasksByAssignee), ...teamMembers.map(m => m.name)])].sort();
 
@@ -1131,6 +1136,10 @@
             const days = Array.from({ length: 7 }, (_, i) => new Date(weekStartDate.getFullYear(), weekStartDate.getMonth(), weekStartDate.getDate() + i));
             const dayStrings = days.map(formatDate);
 
+            // Pre-build Dropdown HTML ensuring full text represents the value in UI
+            const catOptionsHtml = Object.entries(CATEGORY_CODE_TO_FULL).map(([k, v]) => `<option value="${k}">${v}</option>`).join('');
+            const statusOptionsHtml = Object.entries(STATUS_CODE_TO_FULL).map(([k, v]) => `<option value="${k}">${v}</option>`).join('');
+
             // --- Header ---
             let headHtml = `<thead>
                 <tr>
@@ -1146,12 +1155,11 @@
 
             // --- Body ---
             etCellMap = {};
-            let globalRowIdx = 0; // every <tr> gets a unique row index
+            let globalRowIdx = 0; 
             let bodyHtml = '';
 
             assignees.forEach(assignee => {
                 const isHidden = hiddenAssignees.has(assignee);
-                // Determine number of task-rows to render for this assignee (max across days, min 1, plus any manually added extra rows)
                 let maxRows = 1;
                 dayStrings.forEach(ds => {
                     const count = (tasksByAssignee[assignee] || []).filter(t => t.taskDate === ds).length;
@@ -1199,10 +1207,21 @@
                         const statusCode = task ? (STATUS_FULL_TO_CODE[task.status] || '') : '';
 
                         const baseAttrs = `data-assignee="${assignee}" data-date="${dayString}" data-rowidx="${rowIdx}" data-taskid="${taskId}"`;
-                        bodyHtml += `<td contenteditable="true" spellcheck="false" class="et-cell et-col-c" data-col="c" ${baseAttrs}>${catCode}</td>`;
+                        
+                        const catSelectHtml = `<select class="et-dropdown text-indigo-700" tabindex="-1">
+                            <option value=""></option>
+                            ${catOptionsHtml}
+                        </select>`.replace(`value="${catCode}"`, `value="${catCode}" selected`);
+
+                        const statusSelectHtml = `<select class="et-dropdown font-bold" tabindex="-1">
+                            <option value=""></option>
+                            ${statusOptionsHtml}
+                        </select>`.replace(`value="${statusCode}"`, `value="${statusCode}" selected`);
+
+                        bodyHtml += `<td class="et-cell et-col-c" data-col="c" ${baseAttrs}>${catSelectHtml}</td>`;
                         bodyHtml += `<td contenteditable="true" spellcheck="false" class="et-cell et-col-ct" data-col="ct" ${baseAttrs}>${task && task.count ? task.count : ''}</td>`;
                         bodyHtml += `<td contenteditable="true" spellcheck="false" class="et-cell et-col-task" data-col="task" ${baseAttrs}>${task ? (task.description||'') : ''}</td>`;
-                        bodyHtml += `<td contenteditable="true" spellcheck="false" class="et-cell et-col-s" data-col="s" data-val="${statusCode}" ${baseAttrs}>${statusCode}</td>`;
+                        bodyHtml += `<td class="et-cell et-col-s" data-col="s" data-val="${statusCode}" ${baseAttrs}>${statusSelectHtml}</td>`;
                         bodyHtml += `<td contenteditable="true" spellcheck="false" class="et-cell et-col-p" data-col="p" ${baseAttrs}>${task ? (task.project||'') : ''}</td>`;
                     });
 
@@ -1217,7 +1236,6 @@
             tableEl.innerHTML = headHtml + bodyHtml + '</tbody>';
             taskGridEl.appendChild(tableEl);
 
-            // index cells for selection logic: r = tr index within tbody, c = column index (0 = assignee, 1..35 = day*5+type)
             const trs = tableEl.querySelectorAll('tbody tr');
             trs.forEach((tr, r) => {
                 let c = 0;
@@ -1232,8 +1250,6 @@
 
             setupEtSelection(tableEl);
         }
-
-        // Map a non-editable assignee/leave merged cell out of selection counting; only et-cell elements participate.
 
         function setupEtSelection(tableEl) {
             let dragging = false;
@@ -1265,25 +1281,62 @@
             tableEl.addEventListener('blur', (e) => {
                 const td = e.target.closest('.et-cell');
                 if (!td) return;
-                if (td.dataset.col === 'c') normalizeCodeCell(td, CATEGORY_CODE_TO_FULL);
-                if (td.dataset.col === 's') { normalizeCodeCell(td, STATUS_CODE_TO_FULL); td.dataset.val = td.textContent.trim().toUpperCase(); }
-                saveEtCellGroup(td);
+                // Rely on change events for selects; just catch normal blurring for others
+                if (td.dataset.col !== 'c' && td.dataset.col !== 's') {
+                    saveEtCellGroup(td);
+                }
             }, true);
+            
+            // Listen for changes from the dropdowns
+            tableEl.addEventListener('change', (e) => {
+                const select = e.target.closest('select');
+                if (select) {
+                    const td = select.closest('.et-cell');
+                    if (td) {
+                        if (td.dataset.col === 's') td.dataset.val = select.value; // For CSS color binding
+                        saveEtCellGroup(td);
+                    }
+                }
+            });
 
             tableEl.addEventListener('keydown', (e) => {
                 const td = e.target.closest('.et-cell');
                 if (!td) return;
-                if (e.key === 'Enter') { e.preventDefault(); td.blur(); moveEtFocus(td, 1, 0); }
-                else if (e.key === 'Tab') { e.preventDefault(); td.blur(); moveEtFocus(td, 0, e.shiftKey ? -1 : 1); }
-                else if (e.key === 'Escape') { td.blur(); }
+                
+                if (e.key === 'Enter') { 
+                    e.preventDefault(); 
+                    if(td.contentEditable === "true") td.blur(); 
+                    moveEtFocus(td, 1, 0); 
+                }
+                else if (e.key === 'Tab') { 
+                    e.preventDefault(); 
+                    if(td.contentEditable === "true") td.blur(); 
+                    moveEtFocus(td, 0, e.shiftKey ? -1 : 1); 
+                }
+                else if (e.key === 'Escape') { 
+                    if(td.contentEditable === "true") td.blur(); 
+                    else {
+                        const select = td.querySelector('select');
+                        if (select) select.blur();
+                    }
+                }
             });
         }
 
         function moveEtFocus(td, dr, dc) {
             const r = +td.dataset.r + dr, c = +td.dataset.c + dc;
             const next = etCellMap[`${r},${c}`];
-            if (next) { next.focus(); placeCaretAtEnd(next); }
+            if (next) { 
+                const select = next.querySelector('select');
+                if (select) {
+                    select.focus();
+                } else {
+                    next.focus(); 
+                    placeCaretAtEnd(next); 
+                }
+            }
         }
+        
         function placeCaretAtEnd(el) {
             const range = document.createRange(); range.selectNodeContents(el); range.collapse(false);
             const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
@@ -1300,11 +1353,6 @@
             }
         }
 
-        function normalizeCodeCell(td, codeMap) {
-            const val = td.textContent.trim().toUpperCase();
-            td.textContent = (val && codeMap[val]) ? val : (val === '' ? '' : val); // keep as typed; invalid codes just won't map on save
-        }
-
         // Build tab/newline separated text from current selection and write to clipboard
         function copyEtSelection(e) {
             if (!etSelection) return;
@@ -1315,7 +1363,12 @@
                 const rowVals = [];
                 for (let c = cMin; c <= cMax; c++) {
                     const td = etCellMap[`${r},${c}`];
-                    rowVals.push(td ? td.textContent.trim() : '');
+                    if (td) {
+                        const select = td.querySelector('select');
+                        rowVals.push(select ? select.value : td.textContent.trim());
+                    } else {
+                        rowVals.push('');
+                    }
                 }
                 rows.push(rowVals.join('\t'));
             }
@@ -1339,9 +1392,15 @@
                 cols.forEach((val, ci) => {
                     const td = etCellMap[`${startR + ri},${startC + ci}`];
                     if (td) {
-                        td.textContent = val;
-                        if (td.dataset.col === 'c') normalizeCodeCell(td, CATEGORY_CODE_TO_FULL);
-                        if (td.dataset.col === 's') { normalizeCodeCell(td, STATUS_CODE_TO_FULL); td.dataset.val = td.textContent.trim().toUpperCase(); }
+                        const select = td.querySelector('select');
+                        if (select) {
+                            const valUpper = val.toUpperCase().trim();
+                            const opt = Array.from(select.options).find(o => o.value === valUpper || o.textContent.toUpperCase() === valUpper);
+                            if (opt) select.value = opt.value;
+                            if (td.dataset.col === 's') td.dataset.val = select.value;
+                        } else {
+                            td.textContent = val;
+                        }
                         touched.add(td);
                     }
                 });
@@ -1353,14 +1412,27 @@
 
         // Reads sibling cells of the same (assignee,date,rowIdx) group and saves/creates/deletes the task doc
         function saveEtCellGroup(td) {
-            const { assignee, date, rowidx, taskid } = td.dataset;
+            const { assignee, date, rowidx } = td.dataset;
             if (!assignee || !date) return;
             const key = `${assignee}|${date}|${rowidx}`;
+            
+            // Clear prior debounced execution for this specific row
             if (etSaveTimers[key]) clearTimeout(etSaveTimers[key]);
+            
             etSaveTimers[key] = setTimeout(async () => {
                 const tr = td.closest('tr');
+                if (!tr) return;
+                
                 const group = Array.from(tr.querySelectorAll(`.et-cell[data-assignee="${CSS.escape(assignee)}"][data-date="${CSS.escape(date)}"][data-rowidx="${CSS.escape(rowidx)}"]`));
-                const getVal = (col) => (group.find(c => c.dataset.col === col)?.textContent || '').trim();
+                
+                const getVal = (col) => {
+                    const cEl = group.find(c => c.dataset.col === col);
+                    if (!cEl) return '';
+                    const select = cEl.querySelector('select');
+                    if (select) return select.value;
+                    return cEl.textContent.trim();
+                };
+                
                 const catCode = getVal('c').toUpperCase();
                 const countVal = getVal('ct');
                 const descVal = getVal('task');
@@ -1368,14 +1440,28 @@
                 const projVal = getVal('p');
 
                 const isEmpty = !catCode && !countVal && !descVal && !statusCode && !projVal;
-                const existingId = taskid;
+
+                // To prevent double-entry / duplicate document creation for concurrent edits, 
+                // wait for any ongoing save targeting this exact key to finish.
+                if (pendingSaves[key]) {
+                    try { await pendingSaves[key]; } catch (e) {}
+                }
+
+                // Read taskid INSIDE the timeout to ensure we capture the most recent ID 
+                // populated by the preceding saves or re-renders
+                let existingId = group[0]?.dataset?.taskid;
 
                 if (isEmpty) {
                     if (existingId) {
-                        try { await deleteDoc(doc(getTasksCollection(), existingId)); } catch (err) { console.error(err); }
+                        const delPromise = deleteDoc(doc(getTasksCollection(), existingId));
+                        pendingSaves[key] = delPromise;
+                        try { await delPromise; } catch (err) { console.error(err); } finally { 
+                            if (pendingSaves[key] === delPromise) delete pendingSaves[key]; 
+                        }
                     }
                     return;
                 }
+                
                 if (!descVal) return; // need at least a task description before saving
 
                 const taskData = {
@@ -1387,14 +1473,34 @@
                     project: projVal || '',
                     updatedBy: currentUserId, updatedAt: new Date().toISOString()
                 };
-                try {
+
+                const currentPromise = (async () => {
                     if (existingId) {
                         await updateDoc(doc(getTasksCollection(), existingId), taskData);
                     } else {
                         const newDoc = await addDoc(getTasksCollection(), { ...taskData, createdBy: currentUserId, createdAt: new Date().toISOString() });
+                        
+                        // Update detached DOM group
                         group.forEach(c => c.dataset.taskid = newDoc.id);
+                        
+                        // Also update active DOM elements in case `renderTaskGrid` recreated them
+                        const liveGroup = document.querySelectorAll(`.et-cell[data-assignee="${CSS.escape(assignee)}"][data-date="${CSS.escape(date)}"][data-rowidx="${CSS.escape(rowidx)}"]`);
+                        liveGroup.forEach(c => c.dataset.taskid = newDoc.id);
                     }
-                } catch (err) { console.error('Error saving inline task cell:', err); showAlert('Save Error', 'Failed to save task cell.'); }
+                })();
+
+                pendingSaves[key] = currentPromise;
+
+                try {
+                    await currentPromise;
+                } catch (err) { 
+                    console.error('Error saving inline task cell:', err); 
+                    showAlert('Save Error', 'Failed to save task cell.'); 
+                } finally {
+                    if (pendingSaves[key] === currentPromise) {
+                        delete pendingSaves[key];
+                    }
+                }
             }, 400);
         }
 
@@ -1433,7 +1539,7 @@
                 } else {
                     hiddenAssignees.add(assignee);
                 }
-                updateWeekView(); // Re-render the grid to reflect the change
+                updateWeekView(); 
                 return;
             }
 
@@ -1444,7 +1550,6 @@
                 return;
             }
             
-            // New Allocation Action
             if (action === 'edit-allocation') {
                 const userId = button.dataset.user;
                 const date = button.dataset.date;
@@ -1477,7 +1582,6 @@
             document.getElementById('taskModalTitle').textContent = task ? 'Edit Task' : 'Add New Task';
             document.getElementById('taskId').value = task ? task.id : '';
             document.getElementById('taskDescription').value = task ? task.description : '';
-            // Default to empty if creating new, or task value if editing
             document.getElementById('taskAssignee').value = task ? task.assignee : "";
             document.getElementById('taskStatus').value = task ? task.status : 'To Do';
             document.getElementById('taskDate').value = task ? task.taskDate : formatDate(new Date());
@@ -1494,11 +1598,10 @@
             const q = query(getAllocationsCollection());
             allocationsUnsubscribe = onSnapshot(q, (snapshot) => {
                 allAllocations = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                // Re-render views dependent on allocation
                 if (document.getElementById('tasks-content').classList.contains('active')) {
                     updateWeekView();
                 }
-                renderUtilizedHours(weeklyTasks, teamMembers, currentWeekStartDate); // Refresh utilized hours
+                renderUtilizedHours(weeklyTasks, teamMembers, currentWeekStartDate); 
             }, (error) => { console.error("Error fetching allocations:", error); });
         }
 
@@ -1508,7 +1611,7 @@
             document.getElementById('allocId').value = allocation ? allocation.id : '';
             document.getElementById('allocModalDateDisplay').textContent = `${userId} - ${date}`;
             document.getElementById('alloc5050').value = allocation ? allocation.p5050 : '';
-            document.getElementById('alloc5051').value = allocation ? allocation.p5051 : ''; // Load 5051
+            document.getElementById('alloc5051').value = allocation ? allocation.p5051 : ''; 
             document.getElementById('alloc5053').value = allocation ? allocation.p5053 : '';
             openModal('allocation');
         }
@@ -1519,7 +1622,7 @@
             const userId = document.getElementById('allocUser').value;
             const date = document.getElementById('allocDate').value;
             const p5050 = parseInt(document.getElementById('alloc5050').value) || 0;
-            const p5051 = parseInt(document.getElementById('alloc5051').value) || 0; // Capture 5051
+            const p5051 = parseInt(document.getElementById('alloc5051').value) || 0; 
             const p5053 = parseInt(document.getElementById('alloc5053').value) || 0;
 
             const data = { userId, date, p5050, p5051, p5053, updatedAt: new Date().toISOString() };
@@ -1562,7 +1665,6 @@
                 option.textContent = member.name;
                 assigneeSelect.appendChild(option);
             });
-            // Default to empty if currentVal is not in list
             assigneeSelect.value = teamMembers.some(m => m.name === currentVal) ? currentVal : "";
         }
         
@@ -1649,7 +1751,6 @@
                 if (document.getElementById('tasks-content').classList.contains('active')) {
                     updateWeekView();
                 }
-                // Always refresh utilization table as it depends on leaves now
                 renderUtilizedHours(weeklyTasks, teamMembers, currentWeekStartDate);
             }, (error) => { console.error("Error fetching leaves:", error); });
         }
@@ -1660,7 +1761,7 @@
             const q = query(getReleasesCollection(), orderBy("startDate"));
             releasesUnsubscribe = onSnapshot(q, (snapshot) => {
                 allReleases = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                renderCalendar(); // Re-render calendar when releases change
+                renderCalendar(); 
             }, (error) => { console.error("Error fetching releases:", error); });
         }
 
@@ -1727,7 +1828,6 @@
                     calendarEl.innerHTML += `<div class="flex items-center justify-center font-semibold text-slate-500 text-sm bg-slate-50 rounded-lg">CW${getWeekNumber(currentDate)}</div>`;
                 }
 
-                // Check for releases overlapping this day
                 const releasesOnThisDay = allReleases.filter(r => {
                     const start = new Date(r.startDate.replace(/-/g, '\/'));
                     const end = new Date(r.endDate.replace(/-/g, '\/'));
@@ -1737,29 +1837,23 @@
                 const dayEl = document.createElement('div');
                 let dayClasses = 'calendar-day border border-slate-200 rounded-lg p-1 text-left relative min-h-[80px]';
                 
-                // Highlight release days
                 if (releasesOnThisDay.length > 0) {
                     dayClasses += ' release-day';
                 }
                 
-                // Highlight weekend days
                 if (isWeekend) {
                      dayClasses += ' weekend-day';
                 }
                 
                 dayEl.className = dayClasses;
                 
-                // Release Banner (for start day or continuation)
                 let releaseContent = '';
                 releasesOnThisDay.forEach(r => {
-                    // Simple logic: Show badge on every day of release
                     releaseContent += `<div class="release-badge" title="${r.name} (Click to delete)" onclick="handleDeleteReleaseWrapper('${r.id}')"><i class="fas fa-rocket mr-1"></i>${r.name}</div>`;
                 });
 
-                // Find all leaves for this day
                 const leavesOnThisDay = (allLeaves || []).filter(l => new Date(l.startDate.replace(/-/g, '\/')) <= currentDate && currentDate <= new Date(l.endDate.replace(/-/g, '\/')));
                 
-                // Filter Logic: If user has MEP_holiday, hide other leaves
                 const usersWithMEP = new Set(leavesOnThisDay.filter(l => l.reason === 'MEP_holiday').map(l => l.userId));
                 const leavesToDisplay = leavesOnThisDay.filter(l => {
                     if (usersWithMEP.has(l.userId)) {
@@ -1781,7 +1875,7 @@
                 if (leavesToDisplay.length > 0) {
                     dayContent += '<div class="mt-1 space-y-1 px-1 grow">';
                     leavesToDisplay.forEach(leave => {
-                        let colorClass = 'bg-blue-100 text-blue-800'; // Default Pending
+                        let colorClass = 'bg-blue-100 text-blue-800'; 
                         if (leave.reason === 'MEP_holiday') {
                              colorClass = 'bg-purple-100 text-purple-800';
                         } else if (leave.status === 'Approved') {
@@ -1808,13 +1902,12 @@
                     dayContent += '</div>';
                 }
                 
-                dayContent += '</div>'; // Close flex col
+                dayContent += '</div>'; 
                 dayEl.innerHTML = dayContent;
                 calendarEl.appendChild(dayEl);
             }
         }
 
-        // Global function for onclick in HTML string
         window.handleDeleteReleaseWrapper = function(id) {
             handleDeleteRelease(id);
         }
@@ -1856,13 +1949,11 @@
             }
 
             const leavePromises = usersToApplyLeave.map(userId => {
-                // Initialize status as Pending for new leaves unless specifically handled otherwise (MEP holidays might bypass, but keeping consistent)
                 const leaveData = { 
                     reason, userId, startDate, endDate, updatedAt: new Date().toISOString(),
-                    status: 'Pending' // Default status
+                    status: 'Pending' 
                 };
                 if (leaveId && usersToApplyLeave.length === 1 && reason !== 'MEP_holiday') {
-                    // Don't change status on edit from modal
                     delete leaveData.status; 
                     return updateDoc(doc(getLeavesCollection(), leaveId), leaveData);
                 } else {
@@ -2020,16 +2111,14 @@
 
             const days = Array.from({ length: 7 }, (_, i) => new Date(weekStartDate.getFullYear(), weekStartDate.getMonth(), weekStartDate.getDate() + i));
             
-            // Structure: { MemberName: { DateString: { p5050: number, p5051: number, p5053: number } } }
             const utilization = {};
             members.forEach(m => utilization[m.name] = {});
 
-            // Use Allocations Collection instead of tasks
             allAllocations.forEach(alloc => {
                 if (utilization[alloc.userId]) {
                     utilization[alloc.userId][alloc.date] = { 
                         p5050: alloc.p5050 || 0, 
-                        p5051: alloc.p5051 || 0, // Added 5051 support
+                        p5051: alloc.p5051 || 0, 
                         p5053: alloc.p5053 || 0 
                     };
                 }
@@ -2051,8 +2140,6 @@
                 days.forEach(day => {
                     const dayString = formatDate(day);
                     
-                    // --- UPDATED LOGIC START ---
-                    // Check for leave
                     const leave = allLeaves.find(l => l.userId === member.name && dayString >= l.startDate && dayString <= l.endDate);
                     
                     let cellContent = '';
@@ -2064,12 +2151,12 @@
                         
                         if (dayData) {
                             const hrs5050 = (dayData.p5050 / 100) * 8.5;
-                            const hrs5051 = (dayData.p5051 / 100) * 8.5; // Added 5051
+                            const hrs5051 = (dayData.p5051 / 100) * 8.5; 
                             const hrs5053 = (dayData.p5053 / 100) * 8.5;
-                            const totalHours = hrs5050 + hrs5051 + hrs5053; // Included hrs5051
+                            const totalHours = hrs5050 + hrs5051 + hrs5053; 
 
                             if (hrs5050 > 0) cellContent += `<div class="text-xs text-teal-600 font-semibold">5050: ${hrs5050.toFixed(1)}h</div>`;
-                            if (hrs5051 > 0) cellContent += `<div class="text-xs text-blue-600 font-semibold">5051: ${hrs5051.toFixed(1)}h</div>`; // Added rendering 5051
+                            if (hrs5051 > 0) cellContent += `<div class="text-xs text-blue-600 font-semibold">5051: ${hrs5051.toFixed(1)}h</div>`; 
                             if (hrs5053 > 0) cellContent += `<div class="text-xs text-purple-600 font-semibold">5053: ${hrs5053.toFixed(1)}h</div>`;
                             
                             if (totalHours > 0) {
@@ -2081,7 +2168,6 @@
                             cellContent = `<span class="text-xs text-slate-300">-</span>`;
                         }
                     }
-                    // --- UPDATED LOGIC END ---
                     
                     tableHtml += `<td class="px-2 py-2 text-center align-top border-r border-slate-200 h-24">${cellContent}</td>`;
                 });
@@ -2095,24 +2181,21 @@
         function exportUtilizedHoursToExcel() {
             const days = Array.from({ length: 7 }, (_, i) => new Date(currentWeekStartDate.getFullYear(), currentWeekStartDate.getMonth(), currentWeekStartDate.getDate() + i));
             
-            // Build structure similar to render
             const utilization = {};
             teamMembers.forEach(m => utilization[m.name] = {});
             allAllocations.forEach(alloc => {
                 if (utilization[alloc.userId]) {
                     utilization[alloc.userId][alloc.date] = { 
                         p5050: alloc.p5050 || 0, 
-                        p5051: alloc.p5051 || 0, // Ensure 5051 works in export
+                        p5051: alloc.p5051 || 0, 
                         p5053: alloc.p5053 || 0 
                     };
                 }
             });
 
-            // Headers
             const header = ["Team Member"];
             days.forEach(day => header.push(`${day.toLocaleDateString('en-US', { weekday: 'short' })} ${day.getDate()}`));
 
-            // Data
             const data = teamMembers.map(member => {
                 const row = [member.name];
                 days.forEach(day => {
@@ -2125,13 +2208,13 @@
                         const dayData = utilization[member.name]?.[dayString];
                         if (dayData) {
                             const hrs5050 = (dayData.p5050 / 100) * 8.5;
-                            const hrs5051 = (dayData.p5051 / 100) * 8.5; // Added 5051 calculation
+                            const hrs5051 = (dayData.p5051 / 100) * 8.5; 
                             const hrs5053 = (dayData.p5053 / 100) * 8.5;
-                            const totalHours = hrs5050 + hrs5051 + hrs5053; // Included 5051
+                            const totalHours = hrs5050 + hrs5051 + hrs5053; 
                             
                             let cellText = "";
                             if (hrs5050 > 0) cellText += `5050: ${hrs5050.toFixed(1)}h\n`;
-                            if (hrs5051 > 0) cellText += `5051: ${hrs5051.toFixed(1)}h\n`; // Export string 5051
+                            if (hrs5051 > 0) cellText += `5051: ${hrs5051.toFixed(1)}h\n`; 
                             if (hrs5053 > 0) cellText += `5053: ${hrs5053.toFixed(1)}h\n`;
                             if (totalHours > 0) cellText += `Total: ${totalHours.toFixed(1)}h`;
                             row.push(cellText.trim());
@@ -2144,13 +2227,11 @@
             });
 
             const cw = getWeekNumber(currentWeekStartDate);
-            // Title Row
             const titleRow = [`Weekly Utilized Hours - CW${cw} (${days[0].toLocaleDateString()} - ${days[6].toLocaleDateString()})`];
             
-            // combine
             const wsData = [titleRow, [], header, ...data];
             const ws = XLSX.utils.aoa_to_sheet(wsData);
-            ws['!cols'] = [{ wch: 20 }, ...Array(7).fill({ wch: 20 })]; // Column widths
+            ws['!cols'] = [{ wch: 20 }, ...Array(7).fill({ wch: 20 })]; 
 
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Utilized Hours");
@@ -2158,10 +2239,9 @@
         }
 
         // --- Metrics Logic ---
-
         function loadMetrics() {
              if (metricsUnsubscribe) metricsUnsubscribe();
-            const q = query(getMetricsCollection(), orderBy("engineer")); // Ordered by engineer for grouping
+            const q = query(getMetricsCollection(), orderBy("engineer")); 
             metricsUnsubscribe = onSnapshot(q, (snapshot) => {
                 allMetrics = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 renderMetricsTable();
@@ -2228,7 +2308,6 @@
             const can = parseInt(document.getElementById('metricCan').value) || 0;
             const cannot = parseInt(document.getElementById('metricCannot').value) || 0;
             
-            // New logic
             const sum = fully + semi + can + cannot;
             const sumDisplay = document.getElementById('metricAutoSumDisplay');
             if(sumDisplay) sumDisplay.textContent = sum;
@@ -2257,7 +2336,7 @@
                 reviewed: reviewed,
                 proposed: proposed,
                 draft: draft,
-                totalTestCases: total, // Storing for easier sorting/filtering later if needed
+                totalTestCases: total, 
                 gapReason: document.getElementById('metricGapReason').value,
                 fullyAutomated: fully,
                 semiAutomated: parseInt(document.getElementById('metricSemi').value) || 0,
@@ -2296,8 +2375,7 @@
                 tr.className = 'hover:bg-slate-50 border-b border-slate-200';
                 tr.dataset.id = metric.id;
                 
-                // Calculate individual percentages
-                const total = metric.totalTestCases > 0 ? metric.totalTestCases : 1; // Prevent division by zero
+                const total = metric.totalTestCases > 0 ? metric.totalTestCases : 1; 
                 const pctFully = ((metric.fullyAutomated || 0) / total * 100).toFixed(1) + '%';
                 const pctSemi = ((metric.semiAutomated || 0) / total * 100).toFixed(1) + '%';
                 const pctCan = ((metric.canBeAutomated || 0) / total * 100).toFixed(1) + '%';
@@ -2350,7 +2428,6 @@
             if (!row) return;
             const metricId = row.dataset.id;
             
-            // Protected action check using existing function
              performProtectedTaskAction(async () => {
                 if (action === 'edit-metric') {
                     const metric = allMetrics.find(m => m.id === metricId);
@@ -2370,12 +2447,11 @@
         function exportMetricsToExcel() {
              if (allMetrics.length === 0) return showAlert("No Data", "No metrics to export.");
 
-             // Create header rows matching the UI table
              const header1 = [
                 "Test Engineer", "Features", "Test Suite ID", 
                 "Total Test Cases", "", "", "", 
                 "Comments", 
-                "Automation status", "", "", "", "", "", "", "", "", // Added colspan placeholders
+                "Automation status", "", "", "", "", "", "", "", "", 
                 "Comments"
              ];
              const header2 = [
@@ -2421,15 +2497,15 @@
              const ws = XLSX.utils.aoa_to_sheet(ws_data);
 
              ws['!merges'] = [
-                { s: { r: 0, c: 0 }, e: { r: 2, c: 0 } }, // Engineer
-                { s: { r: 0, c: 1 }, e: { r: 2, c: 1 } }, // Features
-                { s: { r: 0, c: 2 }, e: { r: 2, c: 2 } }, // Suite ID
-                { s: { r: 0, c: 3 }, e: { r: 0, c: 6 } }, // Total TC Top
-                { s: { r: 1, c: 3 }, e: { r: 1, c: 6 } }, // Total TC Sub
-                { s: { r: 0, c: 7 }, e: { r: 2, c: 7 } }, // Comments Gap
-                { s: { r: 0, c: 8 }, e: { r: 0, c: 16 } }, // Auto Status Top (updated colspan)
-                { s: { r: 1, c: 8 }, e: { r: 1, c: 16 } }, // Auto Status Mid (updated colspan)
-                { s: { r: 0, c: 17 }, e: { r: 2, c: 17 } }, // Comments Auto
+                { s: { r: 0, c: 0 }, e: { r: 2, c: 0 } }, 
+                { s: { r: 0, c: 1 }, e: { r: 2, c: 1 } }, 
+                { s: { r: 0, c: 2 }, e: { r: 2, c: 2 } }, 
+                { s: { r: 0, c: 3 }, e: { r: 0, c: 6 } }, 
+                { s: { r: 1, c: 3 }, e: { r: 1, c: 6 } }, 
+                { s: { r: 0, c: 7 }, e: { r: 2, c: 7 } }, 
+                { s: { r: 0, c: 8 }, e: { r: 0, c: 16 } }, 
+                { s: { r: 1, c: 8 }, e: { r: 1, c: 16 } }, 
+                { s: { r: 0, c: 17 }, e: { r: 2, c: 17 } }, 
              ];
              
              ws['!cols'] = [
@@ -2487,7 +2563,6 @@
             XLSX.writeFile(wb, `Weekly_Count_Summary_CW${weekNum}.xlsx`);
         }
 
-
         function exportToExcel() {
             if (weeklyTasks.length === 0 && allLeaves.length === 0) return showAlert("No Data", "No tasks or leaves to export.");
             
@@ -2499,7 +2574,7 @@
             
             const data = [];
             assignees.forEach(assignee => {
-                if (hiddenAssignees.has(assignee)) return; // Skip hidden assignees
+                if (hiddenAssignees.has(assignee)) return; 
 
                 const tasksForAssignee = weeklyTasks.filter(t => t.assignee === assignee);
                 const row = [assignee];
@@ -2522,7 +2597,6 @@
                 data.push(row);
             });
 
-
             const ws = XLSX.utils.aoa_to_sheet([header, ...data]);
             ws['!cols'] = [{ wch: 25 }, { wch: 20 }, ...Array(7).fill({ wch: 45 })];
             const wb = XLSX.utils.book_new();
@@ -2536,12 +2610,10 @@
             const daysInMonth = new Date(year, month + 1, 0).getDate();
             const monthName = currentCalendarDate.toLocaleString('default', { month: 'long' });
 
-            // Initialize Worksheet
             const ws = {};
             const merges = [];
-            const colWidths = [{ wch: 25 }]; // Team Member col
+            const colWidths = [{ wch: 25 }]; 
 
-            // Helper to add cell
             function addCell(r, c, val, style = {}) {
                 const ref = XLSX.utils.encode_cell({r, c});
                 ws[ref] = { t: 's', v: val, s: style };
@@ -2549,7 +2621,7 @@
 
             // --- Row 0: Title ---
             addCell(0, 0, `Leave Report - ${monthName} ${year}`, { font: { bold: true, sz: 14 } });
-            merges.push({ s: { r: 0, c: 0 }, e: { r: 0, c: daysInMonth } }); // Merge title across
+            merges.push({ s: { r: 0, c: 0 }, e: { r: 0, c: daysInMonth } }); 
 
             // --- Row 1: CW Header ---
             addCell(1, 0, "CW", { font: { bold: true }, alignment: { horizontal: "center" }, fill: { fgColor: { rgb: "E2E8F0" } } });
@@ -2560,7 +2632,6 @@
                 const d = new Date(year, month, i);
                 const cw = getWeekNumber(d);
                 const colIdx = i;
-
                 const cwStyle = { font: { bold: true }, alignment: { horizontal: "center" }, fill: { fgColor: { rgb: "E2E8F0" } } };
 
                 if (cw !== currentCW) {
@@ -2590,7 +2661,7 @@
                 
                 let style = { font: { bold: true }, alignment: { horizontal: "center" }, border: { bottom: { style: "thin" } } };
                 if (isWeekend) {
-                    style.fill = { fgColor: { rgb: "F1F5F9" } }; // Light grey
+                    style.fill = { fgColor: { rgb: "F1F5F9" } }; 
                 }
                 
                 addCell(2, i, `${i} (${dayName})`, style);
@@ -2616,8 +2687,8 @@
                 
                 if (activeReleases.length > 0) {
                     val = activeReleases.map(r => r.name).join(', ');
-                    style.fill = { fgColor: { rgb: "FFE4E6" } }; // Rose 100
-                    style.font = { color: { rgb: "9F1239" } }; // Rose 800
+                    style.fill = { fgColor: { rgb: "FFE4E6" } }; 
+                    style.font = { color: { rgb: "9F1239" } }; 
                 }
                 
                 if (!val && (currentDate.getDay() === 0 || currentDate.getDay() === 6)) {
@@ -2666,14 +2737,14 @@
                         }
 
                         if (leaveToDisplay.reason === 'MEP_holiday') {
-                            style.fill = { fgColor: { rgb: "F3E8FF" } }; // Purple 100
-                            style.font = { color: { rgb: "6B21A8" } }; // Purple 800
+                            style.fill = { fgColor: { rgb: "F3E8FF" } }; 
+                            style.font = { color: { rgb: "6B21A8" } }; 
                         } else if (status === 'Approved') {
-                            style.fill = { fgColor: { rgb: "15803D" } }; // Green 700
-                            style.font = { color: { rgb: "FFFFFF" } }; // White
+                            style.fill = { fgColor: { rgb: "15803D" } }; 
+                            style.font = { color: { rgb: "FFFFFF" } }; 
                         } else {
-                            style.fill = { fgColor: { rgb: "DBEAFE" } }; // Blue 100
-                            style.font = { color: { rgb: "1E40AF" } }; // Blue 800
+                            style.fill = { fgColor: { rgb: "DBEAFE" } }; 
+                            style.font = { color: { rgb: "1E40AF" } }; 
                         }
                     } else if (isWeekend) {
                          style.fill = { fgColor: { rgb: "F1F5F9" } };
@@ -2684,7 +2755,6 @@
                 currentRow++;
             });
 
-            // Finalize
             const range = { s: { r: 0, c: 0 }, e: { r: currentRow - 1, c: daysInMonth } };
             ws['!ref'] = XLSX.utils.encode_range(range);
             ws['!merges'] = merges;
