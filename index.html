@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <!-- Switched to xlsx-js-style for color support in export -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
     <style>
         body {
@@ -50,7 +51,7 @@
         /* --- Excel-style inline task table --- */
         #etTable {
             border-collapse: collapse;
-            min-width: 2200px;
+            min-width: 2500px; /* Increased to accommodate wider dropdowns */
             font-size: 0.8rem;
         }
         #etTable th, #etTable td {
@@ -84,47 +85,38 @@
             white-space: pre-wrap;
             word-break: break-word;
             vertical-align: top;
-            position: relative;
+            position: relative; /* For absolutely positioned dropdowns if needed */
         }
-        .et-cell[contenteditable="true"]:focus { background-color: #eef2ff; box-shadow: inset 0 0 0 2px #6366f1; }
+        .et-cell:focus-within { background-color: #eef2ff; box-shadow: inset 0 0 0 2px #6366f1; }
         .et-cell.et-selected { background-color: #dbeafe; }
         
-        /* Dropdown specific styling */
-        .et-col-c { width: 140px; text-align: left; font-weight: 600; color: #4338ca; padding: 0 !important; }
-        .et-col-s { width: 100px; text-align: left; font-weight: 700; padding: 0 !important; }
-        
+        /* Dropdown styling inside cells */
         .et-dropdown {
             width: 100%;
             height: 100%;
-            min-height: 24px;
-            background: transparent;
             border: none;
+            background: transparent;
             outline: none;
-            appearance: none;
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            text-align: left;
+            font-size: 0.75rem;
             cursor: pointer;
-            padding: 3px 6px;
+            appearance: none; /* Hide default arrow to save space, relies on background */
+            padding-right: 12px;
+            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394a3b8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+            background-repeat: no-repeat;
+            background-position: right 2px top 50%;
+            background-size: 8px auto;
         }
-        .et-dropdown:focus {
-            background-color: #eef2ff;
-            box-shadow: inset 0 0 0 2px #6366f1;
-        }
-        
-        /* Apply colors to the selects based on their container's data-val */
-        .et-col-s[data-val="D"] select { color: #16a34a; }
-        .et-col-s[data-val="P"] select { color: #2563eb; }
-        .et-col-s[data-val="O"] select { color: #d97706; }
 
+        .et-col-c { width: 140px; } /* Wider for full category names */
         .et-col-ct { width: 36px; text-align: center; color: #475569; }
         .et-col-task { min-width: 140px; }
+        .et-col-s { width: 100px; } /* Wider for full status names */
         .et-col-p { min-width: 110px; color: #475569; }
         .et-leave-cell { background-color: #fef3c7; text-align: center; font-weight: 600; color: #92400e; padding: 6px; }
-        .et-add-row-btn { font-size: 0.65rem; color: #6366f1; cursor: pointer; padding: 2px 6px; }
-        .et-add-row-btn:hover { text-decoration: underline; }
-        .et-weekend { background-color: #f8fafc; }
         
+        .et-add-row-btn { font-size: 0.65rem; color: #6366f1; cursor: pointer; padding: 2px 6px; display: block; width: 100%; text-align: left;}
+        .et-add-row-btn:hover { text-decoration: underline; background: #f8fafc; border-radius: 4px;}
+        .et-weekend { background-color: #f8fafc; }
         .task-card {
             transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
@@ -138,9 +130,10 @@
         .hidden-row > div {
             display: none;
         }
+        
         /* Metrics Table Styles */
         .metrics-header {
-            background-color: #ffe4d6; 
+            background-color: #ffe4d6; /* Light orange matches image */
             border-color: #fed7aa;
         }
         .metrics-sub-header {
@@ -148,7 +141,7 @@
         }
         /* Release Plan Styles */
         .release-day {
-            background-color: #fff1f2; 
+            background-color: #fff1f2; /* Light rose background for release days */
             border: 1px solid #fecdd3;
         }
         .release-badge {
@@ -171,7 +164,7 @@
         }
         /* Weekend Style */
         .weekend-day {
-            background-color: #f1f5f9; 
+            background-color: #f1f5f9; /* Slate 100 */
         }
         /* Custom File Input */
         .file-upload-wrapper {
@@ -227,7 +220,7 @@
                     <button class="tab-button group inline-flex items-center py-4 px-1 border-b-2 font-semibold text-sm text-slate-500 border-transparent hover:text-slate-700 hover:border-slate-300" data-tab="metrics">
                         <i class="fas fa-chart-pie mr-2 text-slate-400 group-hover:text-slate-500"></i>Test Suite Metrics
                     </button>
-                    <!-- Traceability Suite Tab -->
+                    <!-- NEW: Traceability Suite Tab -->
                     <button class="tab-button group inline-flex items-center py-4 px-1 border-b-2 font-semibold text-sm text-slate-500 border-transparent hover:text-slate-700 hover:border-slate-300" data-tab="traceability">
                         <i class="fas fa-network-wired mr-2 text-slate-400 group-hover:text-slate-500"></i>Traceability Suite
                     </button>
@@ -249,13 +242,11 @@
                         </button>
                     </div>
                     <div class="flex items-center space-x-3 mt-4 sm:mt-0">
+                        <!-- Legend updated to show that full forms are used now -->
                         <div class="hidden md:flex items-center text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 space-x-3">
-                            <span><b class="text-indigo-600">C</b>=Category (Dropdown)</span>
+                            <span><b class="text-indigo-600">C</b>=Category</span>
                             <span><b class="text-indigo-600">CT</b>=Count</span>
-                            <span><b class="text-indigo-600">S</b>=Status (Dropdown)</span>
-                            <span class="text-slate-400">|</span>
-                            <span>C: Task/Meeting/New TCs/etc.</span>
-                            <span>S: To Do/In Progress/Done</span>
+                            <span><b class="text-indigo-600">S</b>=Status</span>
                         </div>
                         <button id="addTaskBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg shadow-indigo-500/30 transition-transform transform hover:scale-105">
                             <i class="fas fa-plus mr-2"></i>Detailed Add
@@ -270,7 +261,7 @@
                  <div id="no-tasks-message" class="hidden text-center py-20">
                     <i class="fas fa-folder-open text-5xl text-slate-300"></i>
                     <p class="mt-4 text-xl font-semibold text-slate-600">No tasks for this week.</p>
-                    <p class="text-sm text-slate-400">Click "Add New Task" to get started!</p>
+                    <p class="text-sm text-slate-400">Click "Detailed Add" or type directly in the grid to get started!</p>
                 </div>
             </div>
 
@@ -313,7 +304,7 @@
                         <button id="nextMonthBtn" class="p-2 rounded-full hover:bg-slate-100"><i class="fas fa-chevron-right"></i></button>
                     </div>
                     <div id="leaveCalendar" class="grid grid-cols-8 gap-1 text-center">
-                        <!-- Calendar will be dynamically inserted here -->
+                       <!-- Calendar will be dynamically inserted here -->
                     </div>
                 </div>
             </div>
@@ -322,7 +313,7 @@
             <div id="weekly-count-content" class="tab-content">
                 <div class="bg-white p-6 rounded-xl shadow-md">
                     <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-semibold text-slate-800">Weekly Count Summary <span id="weeklyCountDateRange" class="text-base font-normal text-slate-500"></span></h2>
+                        <h2 class="text-xl font-semibold text-slate-800">Weekly Count Summary <span id="weeklyCountDateRange" class="text-base font-normal text-slate-500 ml-2"></span></h2>
                         <button id="exportCountBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md text-sm transition-transform transform hover:scale-105">
                             <i class="fas fa-file-excel mr-2"></i>Export
                         </button>
@@ -384,7 +375,7 @@
                 </div>
             </div>
 
-            <!-- Traceability Suite Tab -->
+            <!-- NEW: Traceability Suite Tab -->
             <div id="traceability-content" class="tab-content">
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
                     
@@ -519,7 +510,7 @@
                 <input type="hidden" id="taskId">
                 <div class="mb-5">
                     <label for="taskDescription" class="block text-slate-600 text-sm font-bold mb-2">Task Description</label>
-                    <textarea id="taskDescription" rows="3" class="shadow-sm appearance-none border border-slate-300 rounded-lg w-full py-2 px-3 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500" required></textarea>
+                    <textarea id="taskDescription" rows="3" class="shadow-sm appearance-none border border-slate-300 rounded-lg w-full py-2 px-3 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
                     <div>
@@ -853,32 +844,35 @@
         let leavesUnsubscribe = null;
         let releasesUnsubscribe = null;
         let metricsUnsubscribe = null;
-        let allocationsUnsubscribe = null; 
+        let allocationsUnsubscribe = null; // New
         let currentWeekStartDate = getStartOfWeek(new Date());
         let currentCalendarDate = new Date();
         let weeklyTasks = []; 
         let allLeaves = [];
         let allReleases = [];
         let allMetrics = [];
-        let allAllocations = []; 
+        let allAllocations = []; // New
         let tasksUnlocked = false;
         let passwordPromiseResolve = null;
         let hiddenAssignees = new Set();
         const categoriesWithCount = ['New TCs', 'Rework TCs', 'New Script/Automation', 'Rework Script/Automation', 'Req Analysis', 'Automation_Dry_run', 'Execution'];
 
-        // --- Excel-style grid: code <-> full word maps ---
-        const CATEGORY_CODE_TO_FULL = { 'T':'Task','M':'Meeting','N':'New TCs','RW':'Rework TCs','NS':'New Script/Automation','RS':'Rework Script/Automation','AD':'Automation_Dry_run','EX':'Execution','RA':'Req Analysis' };
-        const CATEGORY_FULL_TO_CODE = Object.fromEntries(Object.entries(CATEGORY_CODE_TO_FULL).map(([k,v]) => [v,k]));
-        const STATUS_CODE_TO_FULL = { 'O':'To Do','P':'In Progress','D':'Done' };
-        const STATUS_FULL_TO_CODE = Object.fromEntries(Object.entries(STATUS_CODE_TO_FULL).map(([k,v]) => [v,k]));
-        const ET_COL_TYPES = ['c','ct','task','s','p']; 
-        let etExtraRows = {}; 
-        let etSelection = null; 
-        let etActiveCell = null; 
-        let etCellMap = {}; 
-        let etSaveTimers = {}; 
+        // --- Excel-style grid definitions (Updated to full forms) ---
+        const CATEGORY_OPTIONS = [
+            'Task', 'Meeting', 'New TCs', 'Rework TCs', 
+            'New Script/Automation', 'Rework Script/Automation', 
+            'Automation_Dry_run', 'Execution', 'Req Analysis'
+        ];
         
-        let pendingSaves = {}; // Tracks in-progress save Promises to prevent duplicate entries
+        const STATUS_OPTIONS = ['To Do', 'In Progress', 'Done'];
+        
+        const ET_COL_TYPES = ['c','ct','task','s','p']; // 5 sub-columns per day
+        let etExtraRows = {}; // { assignee: number of extra blank rows added in UI }
+        let etSelection = null; // {r1,c1,r2,c2} selection rectangle (table-wide row/col indices)
+        let etActiveCell = null; // last focused/clicked <td>
+        let etCellMap = {}; // "r,c" -> td element, rebuilt each render
+        let etSaveTimers = {}; // debounce timers keyed by "assignee|date|rowIdx"
+        let pendingSaves = {}; // to prevent double-entry documents
         
         // --- App Initialization ---
         document.addEventListener('DOMContentLoaded', () => {
@@ -889,17 +883,17 @@
             loadLeaves();
             loadReleases(); 
             loadMetrics(); 
-            loadAllocations(); 
+            loadAllocations(); // New
             updateLockIcon();
         });
 
-        // --- Firebase Collections ---
+        // --- Firestore Collections ---
         const getTasksCollection = () => collection(db, `apps/${appId}/tasks`);
         const getLeavesCollection = () => collection(db, `apps/${appId}/leaves`);
         const getReleasesCollection = () => collection(db, `apps/${appId}/releases`);
         const getTeamCollection = () => collection(db, `apps/${appId}/team`);
         const getMetricsCollection = () => collection(db, `apps/${appId}/metrics`); 
-        const getAllocationsCollection = () => collection(db, `apps/${appId}/allocations`);
+        const getAllocationsCollection = () => collection(db, `apps/${appId}/allocations`); // New
 
         // --- Event Listeners ---
         function setupEventListeners() {
@@ -933,7 +927,7 @@
             document.getElementById('cancelPassword').addEventListener('click', handlePasswordCancel);
             document.getElementById('leaveReason').addEventListener('change', toggleLeaveUserSelection);
             
-            // Metrics Event Listeners
+            // --- Metrics Event Listeners ---
             document.getElementById('addMetricBtn').addEventListener('click', () => openMetricsModal(null));
             document.getElementById('cancelMetric').addEventListener('click', () => closeModal('metrics'));
             document.getElementById('metricsForm').addEventListener('submit', handleMetricsFormSubmit);
@@ -942,12 +936,12 @@
             document.querySelectorAll('.metric-input').forEach(input => input.addEventListener('input', calculateMetricTotal));
             document.querySelectorAll('.metric-auto-input').forEach(input => input.addEventListener('input', calculateAutomationPercent));
 
-            // Allocation Event Listeners
+            // --- Allocation Event Listeners ---
             document.getElementById('cancelAllocation').addEventListener('click', () => closeModal('allocation'));
             document.getElementById('allocationForm').addEventListener('submit', handleAllocationFormSubmit);
             document.getElementById('exportUtilizedBtn').addEventListener('click', exportUtilizedHoursToExcel);
 
-            // Traceability Suite Listeners
+            // --- Traceability Suite Listeners (Real Local Execution) ---
             document.getElementById('ptcCredsForm')?.addEventListener('submit', handlePtcCredsSubmit);
             document.getElementById('runReqGapBtn')?.addEventListener('click', () => executeLocalScript('runReqGapBtn', 'reqgap', 'Requirement Gap Analysis'));
             document.getElementById('runTsExportBtn')?.addEventListener('click', () => executeLocalScript('runTsExportBtn', 'export', 'TS Export Only'));
@@ -955,7 +949,8 @@
             document.getElementById('runTsMetricsBtn')?.addEventListener('click', () => executeLocalScript('runTsMetricsBtn', 'metrics', 'Test Suite Metrics Count'));
         }
 
-        // --- UI Simulation for Traceability Suite ---
+        // --- STREAMING_CHUNK:Traceability Suite and Password Functionality... ---
+        // --- UI Simulation for Traceability Suite (Python backend mock) ---
         function handlePtcCredsSubmit(e) {
             e.preventDefault();
             const btn = e.target.querySelector('button[type="submit"]');
@@ -980,7 +975,10 @@
             const originalHtml = btn.innerHTML;
             btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Launching...`;
             btn.disabled = true;
+
+            // Trigger the Custom Windows Protocol
             window.location.href = `ptc-trace://${scriptAlias}/`;
+            
             setTimeout(() => {
                 btn.innerHTML = originalHtml;
                 btn.disabled = false;
@@ -1040,7 +1038,7 @@
             }
         }
 
-        // --- Modal Controls ---
+        // --- Modal Controls & Tabs ---
         function openModal(type) {
             const modal = document.getElementById(`${type}Modal`);
             if (modal) {
@@ -1061,7 +1059,6 @@
             }
         }
 
-        // --- Tab Switching ---
         function switchTab(tabName) {
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             document.querySelectorAll('.tab-button').forEach(b => {
@@ -1072,8 +1069,10 @@
             });
             document.getElementById(`${tabName}-content`).classList.add('active');
             const button = document.querySelector(`.tab-button[data-tab="${tabName}"]`);
-            button.classList.add('active-tab', 'text-indigo-600', 'border-indigo-500');
-            button.querySelector('i').classList.add('text-indigo-500');
+            if (button) {
+                button.classList.add('active-tab', 'text-indigo-600', 'border-indigo-500');
+                button.querySelector('i').classList.add('text-indigo-500');
+            }
         }
 
         // --- Date & Week Helpers ---
@@ -1083,7 +1082,7 @@
         function getWeekNumber(d) {
             const date = new Date(d.getTime());
             const yearStart = new Date(date.getFullYear(), 0, 1);
-            const firstDay = yearStart.getDay(); 
+            const firstDay = yearStart.getDay(); // 0=Sunday, 1=Monday, ...
             const pastDaysOfYear = (date - yearStart) / 86400000;
             return Math.ceil((pastDaysOfYear + firstDay + 1) / 7);
         }
@@ -1105,6 +1104,8 @@
             loadTasksForWeek(weekStart, weekEnd);
         }
 
+        // --- STREAMING_CHUNK:Task Data Loading & Grid Rendering... ---
+        // --- Task Management ---
         function toggleTaskCount() {
             const category = document.getElementById('taskCategory').value;
             const countContainer = document.getElementById('taskCountContainer');
@@ -1121,6 +1122,7 @@
             tasksUnsubscribe = onSnapshot(q, (snapshot) => {
                 weeklyTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 
+                // Sort tasks chronologically by creation time so they appear serially
                 weeklyTasks.sort((a, b) => {
                     const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
                     const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
@@ -1129,7 +1131,7 @@
 
                 renderTaskGrid(weeklyTasks, allLeaves, startDate);
                 renderWeeklyCountData(weeklyTasks, teamMembers, startDate);
-                renderUtilizedHours(weeklyTasks, teamMembers, startDate);
+                renderUtilizedHours(weeklyTasks, teamMembers, startDate); // Render new table
             }, (error) => { console.error("Error fetching tasks:", error); showAlert("Data Error", "Could not load tasks. Check your Firebase configuration and security rules."); });
         }
 
@@ -1137,6 +1139,7 @@
         function renderTaskGrid(tasks, leaves, weekStartDate) {
             const taskGridEl = document.getElementById('taskGrid');
             const tasksByAssignee = tasks.reduce((acc, task) => { (acc[task.assignee || 'Unassigned'] = acc[task.assignee || 'Unassigned'] || []).push(task); return acc; }, {});
+            // Sort each assignee's day-tasks by creation time so row index stays stable across days
             Object.values(tasksByAssignee).forEach(arr => arr.sort((a, b) => (a.createdAt||'').localeCompare(b.createdAt||'')));
             const assignees = [...new Set([...Object.keys(tasksByAssignee), ...teamMembers.map(m => m.name)])].sort();
 
@@ -1153,10 +1156,6 @@
             const days = Array.from({ length: 7 }, (_, i) => new Date(weekStartDate.getFullYear(), weekStartDate.getMonth(), weekStartDate.getDate() + i));
             const dayStrings = days.map(formatDate);
 
-            // Pre-build Dropdown HTML ensuring full text represents the value in UI
-            const catOptionsHtml = Object.entries(CATEGORY_CODE_TO_FULL).map(([k, v]) => `<option value="${k}">${v}</option>`).join('');
-            const statusOptionsHtml = Object.entries(STATUS_CODE_TO_FULL).map(([k, v]) => `<option value="${k}">${v}</option>`).join('');
-
             // --- Header ---
             let headHtml = `<thead>
                 <tr>
@@ -1166,17 +1165,18 @@
             });
             headHtml += `</tr><tr>`;
             days.forEach(() => {
-                headHtml += `<th class="et-col-c" title="Category">C</th><th class="et-col-ct" title="Count">CT</th><th class="et-col-task">Task</th><th class="et-col-s" title="Status">S</th><th class="et-col-p">Project,%,Hrs</th>`;
+                headHtml += `<th class="et-col-c" title="Category">Category</th><th class="et-col-ct" title="Count">CT</th><th class="et-col-task">Task</th><th class="et-col-s" title="Status">Status</th><th class="et-col-p">Project,%,Hrs</th>`;
             });
             headHtml += `</tr></thead><tbody>`;
 
             // --- Body ---
             etCellMap = {};
-            let globalRowIdx = 0; 
+            let globalRowIdx = 0; // every <tr> gets a unique row index
             let bodyHtml = '';
 
             assignees.forEach(assignee => {
                 const isHidden = hiddenAssignees.has(assignee);
+                // Determine number of task-rows to render for this assignee (max across days, min 1, plus any manually added extra rows)
                 let maxRows = 1;
                 dayStrings.forEach(ds => {
                     const count = (tasksByAssignee[assignee] || []).filter(t => t.taskDate === ds).length;
@@ -1191,11 +1191,11 @@
                         bodyHtml += `<td rowspan="${maxRows}" class="et-assignee-col">
                             <div class="flex items-center justify-between">
                                 <span>${assignee}</span>
-                                <button data-action="toggle-visibility" data-assignee="${assignee}" class="text-slate-400 hover:text-indigo-600 px-1">
+                                <button data-action="toggle-visibility" data-assignee="${assignee}" class="text-slate-400 hover:text-indigo-600 px-1 border-none bg-transparent">
                                     <i class="fas ${isHidden ? 'fa-eye' : 'fa-eye-slash'} pointer-events-none text-xs"></i>
                                 </button>
                             </div>
-                            ${!isHidden ? `<div class="et-add-row-btn" data-action="add-row" data-assignee="${assignee}"><i class="fas fa-plus pointer-events-none"></i> row</div>` : ''}
+                            ${!isHidden ? `<button type="button" class="et-add-row-btn bg-transparent border-none p-0 text-left w-full block mt-1" data-action="add-row" data-assignee="${assignee}"><i class="fas fa-plus pointer-events-none"></i> row</button>` : ''}
                         </td>`;
                     }
 
@@ -1220,25 +1220,38 @@
                         const tasksForDay = (tasksByAssignee[assignee] || []).filter(t => t.taskDate === dayString);
                         const task = tasksForDay[rowIdx] || null;
                         const taskId = task ? task.id : '';
-                        const catCode = task ? (CATEGORY_FULL_TO_CODE[task.category] || '') : '';
-                        const statusCode = task ? (STATUS_FULL_TO_CODE[task.status] || '') : '';
+                        
+                        const catVal = task ? (task.category || '') : '';
+                        const statusVal = task ? (task.status || '') : '';
+
+                        // Helper to generate options for dropdowns
+                        const generateOptions = (optionsArr, selectedVal) => {
+                            let opts = `<option value=""></option>`;
+                            optionsArr.forEach(opt => {
+                                opts += `<option value="${opt}" ${opt === selectedVal ? 'selected' : ''}>${opt}</option>`;
+                            });
+                            return opts;
+                        };
 
                         const baseAttrs = `data-assignee="${assignee}" data-date="${dayString}" data-rowidx="${rowIdx}" data-taskid="${taskId}"`;
                         
-                        const catSelectHtml = `<select class="et-dropdown text-indigo-700" tabindex="-1">
-                            <option value=""></option>
-                            ${catOptionsHtml}
-                        </select>`.replace(`value="${catCode}"`, `value="${catCode}" selected`);
-
-                        const statusSelectHtml = `<select class="et-dropdown font-bold" tabindex="-1">
-                            <option value=""></option>
-                            ${statusOptionsHtml}
-                        </select>`.replace(`value="${statusCode}"`, `value="${statusCode}" selected`);
-
-                        bodyHtml += `<td class="et-cell et-col-c" data-col="c" ${baseAttrs}>${catSelectHtml}</td>`;
+                        // Category Dropdown Cell
+                        bodyHtml += `<td class="et-cell et-col-c" data-col="c" ${baseAttrs}>
+                            <select class="et-dropdown">${generateOptions(CATEGORY_OPTIONS, catVal)}</select>
+                        </td>`;
+                        
+                        // Count Cell
                         bodyHtml += `<td contenteditable="true" spellcheck="false" class="et-cell et-col-ct" data-col="ct" ${baseAttrs}>${task && task.count ? task.count : ''}</td>`;
+                        
+                        // Task Description Cell
                         bodyHtml += `<td contenteditable="true" spellcheck="false" class="et-cell et-col-task" data-col="task" ${baseAttrs}>${task ? (task.description||'') : ''}</td>`;
-                        bodyHtml += `<td class="et-cell et-col-s" data-col="s" data-val="${statusCode}" ${baseAttrs}>${statusSelectHtml}</td>`;
+                        
+                        // Status Dropdown Cell
+                        bodyHtml += `<td class="et-cell et-col-s" data-col="s" ${baseAttrs}>
+                            <select class="et-dropdown text-${statusVal === 'Done' ? 'green' : statusVal === 'In Progress' ? 'blue' : statusVal === 'To Do' ? 'orange' : 'slate'}-600 font-semibold">${generateOptions(STATUS_OPTIONS, statusVal)}</select>
+                        </td>`;
+                        
+                        // Project Cell
                         bodyHtml += `<td contenteditable="true" spellcheck="false" class="et-cell et-col-p" data-col="p" ${baseAttrs}>${task ? (task.project||'') : ''}</td>`;
                     });
 
@@ -1253,6 +1266,7 @@
             tableEl.innerHTML = headHtml + bodyHtml + '</tbody>';
             taskGridEl.appendChild(tableEl);
 
+            // index cells for selection logic: r = tr index within tbody, c = column index (0 = assignee, 1..35 = day*5+type)
             const trs = tableEl.querySelectorAll('tbody tr');
             trs.forEach((tr, r) => {
                 let c = 0;
@@ -1268,6 +1282,7 @@
             setupEtSelection(tableEl);
         }
 
+        // --- STREAMING_CHUNK:Setting up inline table interactions and debounced saves... ---
         function setupEtSelection(tableEl) {
             let dragging = false;
             tableEl.addEventListener('mousedown', (e) => {
@@ -1298,21 +1313,15 @@
             tableEl.addEventListener('blur', (e) => {
                 const td = e.target.closest('.et-cell');
                 if (!td) return;
-                // Rely on change events for selects; just catch normal blurring for others
-                if (td.dataset.col !== 'c' && td.dataset.col !== 's') {
-                    saveEtCellGroup(td);
-                }
+                // No need to normalize C and S because they are dropdowns now
+                saveEtCellGroup(td);
             }, true);
             
-            // Listen for changes from the dropdowns
+            // Listen for dropdown changes specifically
             tableEl.addEventListener('change', (e) => {
-                const select = e.target.closest('select');
-                if (select) {
-                    const td = select.closest('.et-cell');
-                    if (td) {
-                        if (td.dataset.col === 's') td.dataset.val = select.value; // For CSS color binding
-                        saveEtCellGroup(td);
-                    }
+                if(e.target.classList.contains('et-dropdown')) {
+                    const td = e.target.closest('.et-cell');
+                    if (td) saveEtCellGroup(td);
                 }
             });
 
@@ -1320,23 +1329,12 @@
                 const td = e.target.closest('.et-cell');
                 if (!td) return;
                 
-                if (e.key === 'Enter') { 
-                    e.preventDefault(); 
-                    if(td.contentEditable === "true") td.blur(); 
-                    moveEtFocus(td, 1, 0); 
-                }
-                else if (e.key === 'Tab') { 
-                    e.preventDefault(); 
-                    if(td.contentEditable === "true") td.blur(); 
-                    moveEtFocus(td, 0, e.shiftKey ? -1 : 1); 
-                }
-                else if (e.key === 'Escape') { 
-                    if(td.contentEditable === "true") td.blur(); 
-                    else {
-                        const select = td.querySelector('select');
-                        if (select) select.blur();
-                    }
-                }
+                // Do not hijack Enter/Tab if focused inside a dropdown
+                if(e.target.tagName === 'SELECT') return;
+
+                if (e.key === 'Enter') { e.preventDefault(); td.blur(); moveEtFocus(td, 1, 0); }
+                else if (e.key === 'Tab') { e.preventDefault(); td.blur(); moveEtFocus(td, 0, e.shiftKey ? -1 : 1); }
+                else if (e.key === 'Escape') { td.blur(); }
             });
         }
 
@@ -1345,15 +1343,10 @@
             const next = etCellMap[`${r},${c}`];
             if (next) { 
                 const select = next.querySelector('select');
-                if (select) {
-                    select.focus();
-                } else {
-                    next.focus(); 
-                    placeCaretAtEnd(next); 
-                }
+                if(select) select.focus();
+                else { next.focus(); placeCaretAtEnd(next); }
             }
         }
-        
         function placeCaretAtEnd(el) {
             const range = document.createRange(); range.selectNodeContents(el); range.collapse(false);
             const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
@@ -1380,12 +1373,12 @@
                 const rowVals = [];
                 for (let c = cMin; c <= cMax; c++) {
                     const td = etCellMap[`${r},${c}`];
+                    let val = '';
                     if (td) {
                         const select = td.querySelector('select');
-                        rowVals.push(select ? select.value : td.textContent.trim());
-                    } else {
-                        rowVals.push('');
+                        val = select ? select.value : td.textContent.trim();
                     }
+                    rowVals.push(val);
                 }
                 rows.push(rowVals.join('\t'));
             }
@@ -1411,10 +1404,9 @@
                     if (td) {
                         const select = td.querySelector('select');
                         if (select) {
-                            const valUpper = val.toUpperCase().trim();
-                            const opt = Array.from(select.options).find(o => o.value === valUpper || o.textContent.toUpperCase() === valUpper);
-                            if (opt) select.value = opt.value;
-                            if (td.dataset.col === 's') td.dataset.val = select.value;
+                            // Find matching option (case insensitive if possible)
+                            const matchedOpt = Array.from(select.options).find(opt => opt.value.toLowerCase() === val.toLowerCase());
+                            if(matchedOpt) select.value = matchedOpt.value;
                         } else {
                             td.textContent = val;
                         }
@@ -1437,10 +1429,10 @@
             if (etSaveTimers[key]) clearTimeout(etSaveTimers[key]);
             
             etSaveTimers[key] = setTimeout(async () => {
-                const tr = td.closest('tr');
-                if (!tr) return;
+                // Re-query the group from the live document to prevent operating on detached DOM nodes
+                const group = Array.from(document.querySelectorAll(`.et-cell[data-assignee="${CSS.escape(assignee)}"][data-date="${CSS.escape(date)}"][data-rowidx="${CSS.escape(rowidx)}"]`));
                 
-                const group = Array.from(tr.querySelectorAll(`.et-cell[data-assignee="${CSS.escape(assignee)}"][data-date="${CSS.escape(date)}"][data-rowidx="${CSS.escape(rowidx)}"]`));
+                if (group.length === 0) return; // Row was deleted or navigated away from
                 
                 const getVal = (col) => {
                     const cEl = group.find(c => c.dataset.col === col);
@@ -1450,73 +1442,48 @@
                     return cEl.textContent.trim();
                 };
                 
-                const catCode = getVal('c').toUpperCase();
+                const catCode = getVal('c'); // Now full text from dropdown
                 const countVal = getVal('ct');
                 const descVal = getVal('task');
-                const statusCode = getVal('s').toUpperCase();
+                const statusCode = getVal('s'); // Now full text from dropdown
                 const projVal = getVal('p');
 
                 const isEmpty = !catCode && !countVal && !descVal && !statusCode && !projVal;
-
-                // To prevent double-entry / duplicate document creation for concurrent edits, 
-                // wait for any ongoing save targeting this exact key to finish.
-                if (pendingSaves[key]) {
-                    try { await pendingSaves[key]; } catch (e) {}
-                }
-
-                // Read taskid INSIDE the timeout to ensure we capture the most recent ID 
-                // populated by the preceding saves or re-renders
+                
+                // Read taskid INSIDE the timeout to ensure we capture the most recent ID
                 let existingId = group[0]?.dataset?.taskid;
-
+                
                 if (isEmpty) {
                     if (existingId) {
-                        const delPromise = deleteDoc(doc(getTasksCollection(), existingId));
-                        pendingSaves[key] = delPromise;
-                        try { await delPromise; } catch (err) { console.error(err); } finally { 
-                            if (pendingSaves[key] === delPromise) delete pendingSaves[key]; 
-                        }
+                        try { await deleteDoc(doc(getTasksCollection(), existingId)); } catch (err) { console.error(err); }
                     }
                     return;
                 }
                 
-                // Allow saving if just count or category are present (removed requirement for task description)
+                // Allow save if either description OR count is provided (needed for counts-only tracking)
+                if (!descVal && !countVal) return; 
 
                 const taskData = {
                     assignee, taskDate: date,
-                    category: CATEGORY_CODE_TO_FULL[catCode] || catCode || 'Task',
-                    status: STATUS_CODE_TO_FULL[statusCode] || statusCode || 'To Do',
+                    category: catCode || 'Task',
+                    status: statusCode || 'To Do',
                     count: countVal || null,
                     description: descVal,
                     project: projVal || '',
                     updatedBy: currentUserId, updatedAt: new Date().toISOString()
                 };
-
-                const currentPromise = (async () => {
+                
+                try {
                     if (existingId) {
                         await updateDoc(doc(getTasksCollection(), existingId), taskData);
                     } else {
                         const newDoc = await addDoc(getTasksCollection(), { ...taskData, createdBy: currentUserId, createdAt: new Date().toISOString() });
-                        
-                        // Update detached DOM group
+                        // Update live DOM immediately so subsequent edits hit the same doc
                         group.forEach(c => c.dataset.taskid = newDoc.id);
-                        
-                        // Also update active DOM elements in case `renderTaskGrid` recreated them
-                        const liveGroup = document.querySelectorAll(`.et-cell[data-assignee="${CSS.escape(assignee)}"][data-date="${CSS.escape(date)}"][data-rowidx="${CSS.escape(rowidx)}"]`);
-                        liveGroup.forEach(c => c.dataset.taskid = newDoc.id);
                     }
-                })();
-
-                pendingSaves[key] = currentPromise;
-
-                try {
-                    await currentPromise;
                 } catch (err) { 
                     console.error('Error saving inline task cell:', err); 
                     showAlert('Save Error', 'Failed to save task cell.'); 
-                } finally {
-                    if (pendingSaves[key] === currentPromise) {
-                        delete pendingSaves[key];
-                    }
                 }
             }, 400);
         }
@@ -1543,39 +1510,42 @@
             } catch (error) { console.error("Error saving task:", error); showAlert("Save Error", "Failed to save the task. Check Firebase rules."); }
         }
         
+        // --- STREAMING_CHUNK:Task Actions and Allocation Processing... ---
         async function handleTaskGridClick(e) {
-            const button = e.target.closest('button[data-action]');
-            if (!button) return;
+            // Broaden the selector to catch buttons, divs or other elements with data-action
+            const actionEl = e.target.closest('[data-action]');
+            if (!actionEl) return;
             
-            const action = button.dataset.action;
+            const action = actionEl.dataset.action;
 
             if (action === 'toggle-visibility') {
-                const assignee = button.dataset.assignee;
+                const assignee = actionEl.dataset.assignee;
                 if (hiddenAssignees.has(assignee)) {
                     hiddenAssignees.delete(assignee);
                 } else {
                     hiddenAssignees.add(assignee);
                 }
-                updateWeekView(); 
+                updateWeekView(); // Re-render the grid to reflect the change
                 return;
             }
 
             if (action === 'add-row') {
-                const assignee = button.dataset.assignee;
+                const assignee = actionEl.dataset.assignee;
                 etExtraRows[assignee] = (etExtraRows[assignee] || 0) + 1;
                 renderTaskGrid(weeklyTasks, allLeaves, currentWeekStartDate);
                 return;
             }
             
+            // Allocation Action
             if (action === 'edit-allocation') {
-                const userId = button.dataset.user;
-                const date = button.dataset.date;
+                const userId = actionEl.dataset.user;
+                const date = actionEl.dataset.date;
                 const existing = allAllocations.find(a => a.userId === userId && a.date === date);
                 openAllocationModal(userId, date, existing);
                 return;
             }
 
-            const taskCard = button.closest('[data-id]');
+            const taskCard = actionEl.closest('[data-id]');
             if (!taskCard) return;
             const taskId = taskCard.dataset.id;
             
@@ -1599,6 +1569,7 @@
             document.getElementById('taskModalTitle').textContent = task ? 'Edit Task' : 'Add New Task';
             document.getElementById('taskId').value = task ? task.id : '';
             document.getElementById('taskDescription').value = task ? task.description : '';
+            // Default to empty if creating new, or task value if editing
             document.getElementById('taskAssignee').value = task ? task.assignee : "";
             document.getElementById('taskStatus').value = task ? task.status : 'To Do';
             document.getElementById('taskDate').value = task ? task.taskDate : formatDate(new Date());
@@ -1615,10 +1586,11 @@
             const q = query(getAllocationsCollection());
             allocationsUnsubscribe = onSnapshot(q, (snapshot) => {
                 allAllocations = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                // Re-render views dependent on allocation
                 if (document.getElementById('tasks-content').classList.contains('active')) {
                     updateWeekView();
                 }
-                renderUtilizedHours(weeklyTasks, teamMembers, currentWeekStartDate); 
+                renderUtilizedHours(weeklyTasks, teamMembers, currentWeekStartDate); // Refresh utilized hours
             }, (error) => { console.error("Error fetching allocations:", error); });
         }
 
@@ -1639,7 +1611,7 @@
             const userId = document.getElementById('allocUser').value;
             const date = document.getElementById('allocDate').value;
             const p5050 = parseInt(document.getElementById('alloc5050').value) || 0;
-            const p5051 = parseInt(document.getElementById('alloc5051').value) || 0; 
+            const p5051 = parseInt(document.getElementById('alloc5051').value) || 0;
             const p5053 = parseInt(document.getElementById('alloc5053').value) || 0;
 
             const data = { userId, date, p5050, p5051, p5053, updatedAt: new Date().toISOString() };
@@ -1658,6 +1630,7 @@
             }
         }
         
+        // --- STREAMING_CHUNK:Team Management, Leaves & Calendar... ---
         // --- Team Management ---
         function loadTeamMembers() {
             const q = query(getTeamCollection(), orderBy("name"));
@@ -1682,6 +1655,7 @@
                 option.textContent = member.name;
                 assigneeSelect.appendChild(option);
             });
+            // Default to empty if currentVal is not in list
             assigneeSelect.value = teamMembers.some(m => m.name === currentVal) ? currentVal : "";
         }
         
@@ -1768,6 +1742,7 @@
                 if (document.getElementById('tasks-content').classList.contains('active')) {
                     updateWeekView();
                 }
+                // Always refresh utilization table as it depends on leaves now
                 renderUtilizedHours(weeklyTasks, teamMembers, currentWeekStartDate);
             }, (error) => { console.error("Error fetching leaves:", error); });
         }
@@ -1778,7 +1753,7 @@
             const q = query(getReleasesCollection(), orderBy("startDate"));
             releasesUnsubscribe = onSnapshot(q, (snapshot) => {
                 allReleases = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                renderCalendar(); 
+                renderCalendar(); // Re-render calendar when releases change
             }, (error) => { console.error("Error fetching releases:", error); });
         }
 
@@ -1845,6 +1820,7 @@
                     calendarEl.innerHTML += `<div class="flex items-center justify-center font-semibold text-slate-500 text-sm bg-slate-50 rounded-lg">CW${getWeekNumber(currentDate)}</div>`;
                 }
 
+                // Check for releases overlapping this day
                 const releasesOnThisDay = allReleases.filter(r => {
                     const start = new Date(r.startDate.replace(/-/g, '\/'));
                     const end = new Date(r.endDate.replace(/-/g, '\/'));
@@ -1854,23 +1830,29 @@
                 const dayEl = document.createElement('div');
                 let dayClasses = 'calendar-day border border-slate-200 rounded-lg p-1 text-left relative min-h-[80px]';
                 
+                // Highlight release days
                 if (releasesOnThisDay.length > 0) {
                     dayClasses += ' release-day';
                 }
                 
+                // Highlight weekend days
                 if (isWeekend) {
                      dayClasses += ' weekend-day';
                 }
                 
                 dayEl.className = dayClasses;
                 
+                // Release Banner (for start day or continuation)
                 let releaseContent = '';
                 releasesOnThisDay.forEach(r => {
+                    // Simple logic: Show badge on every day of release
                     releaseContent += `<div class="release-badge" title="${r.name} (Click to delete)" onclick="handleDeleteReleaseWrapper('${r.id}')"><i class="fas fa-rocket mr-1"></i>${r.name}</div>`;
                 });
 
+                // Find all leaves for this day
                 const leavesOnThisDay = (allLeaves || []).filter(l => new Date(l.startDate.replace(/-/g, '\/')) <= currentDate && currentDate <= new Date(l.endDate.replace(/-/g, '\/')));
                 
+                // Filter Logic: If user has MEP_holiday, hide other leaves
                 const usersWithMEP = new Set(leavesOnThisDay.filter(l => l.reason === 'MEP_holiday').map(l => l.userId));
                 const leavesToDisplay = leavesOnThisDay.filter(l => {
                     if (usersWithMEP.has(l.userId)) {
@@ -1892,7 +1874,7 @@
                 if (leavesToDisplay.length > 0) {
                     dayContent += '<div class="mt-1 space-y-1 px-1 grow">';
                     leavesToDisplay.forEach(leave => {
-                        let colorClass = 'bg-blue-100 text-blue-800'; 
+                        let colorClass = 'bg-blue-100 text-blue-800'; // Default Pending
                         if (leave.reason === 'MEP_holiday') {
                              colorClass = 'bg-purple-100 text-purple-800';
                         } else if (leave.status === 'Approved') {
@@ -1919,12 +1901,13 @@
                     dayContent += '</div>';
                 }
                 
-                dayContent += '</div>'; 
+                dayContent += '</div>'; // Close flex col
                 dayEl.innerHTML = dayContent;
                 calendarEl.appendChild(dayEl);
             }
         }
 
+        // Global function for onclick in HTML string
         window.handleDeleteReleaseWrapper = function(id) {
             handleDeleteRelease(id);
         }
@@ -1966,11 +1949,13 @@
             }
 
             const leavePromises = usersToApplyLeave.map(userId => {
+                // Initialize status as Pending for new leaves unless specifically handled otherwise
                 const leaveData = { 
                     reason, userId, startDate, endDate, updatedAt: new Date().toISOString(),
-                    status: 'Pending' 
+                    status: 'Pending' // Default status
                 };
                 if (leaveId && usersToApplyLeave.length === 1 && reason !== 'MEP_holiday') {
+                    // Don't change status on edit from modal
                     delete leaveData.status; 
                     return updateDoc(doc(getLeavesCollection(), leaveId), leaveData);
                 } else {
@@ -2077,7 +2062,8 @@
                 }
             });
         }
-        
+
+        // --- STREAMING_CHUNK:Weekly Count, Utilized Hours, and Exports... ---
         // --- Weekly Count Data ---
         function renderWeeklyCountData(tasks, members, weekStartDate) {
             const container = document.getElementById('weeklyCountTableContainer');
@@ -2089,6 +2075,7 @@
                 categoriesWithCount.forEach(cat => {
                     summary[member.name][cat] = 0;
                 });
+                summary[member.name]['Total'] = 0; // Initialize Total
             });
 
             tasks.forEach(task => {
@@ -2096,30 +2083,29 @@
                     const count = parseInt(task.count, 10) || 0;
                     if (summary[task.assignee]) {
                         summary[task.assignee][task.category] += count;
+                        summary[task.assignee]['Total'] += count; // Add to Total
                     }
                 }
             });
 
-            let tableHtml = `<table class="min-w-full divide-y divide-slate-200 border border-slate-200">
+            let tableHtml = `<table class="min-w-full divide-y divide-slate-200">
                 <thead class="bg-slate-50">
                     <tr>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider border-r border-slate-200">Team Member</th>`;
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Team Member</th>`;
             categoriesWithCount.forEach(cat => {
-                tableHtml += `<th scope="col" class="px-3 py-3 text-center text-xs font-bold text-slate-600 uppercase tracking-wider border-r border-slate-200">${cat.replace(/_/g, ' ')}</th>`;
+                tableHtml += `<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">${cat.replace(/_/g, ' ')}</th>`;
             });
-            tableHtml += `<th scope="col" class="px-4 py-3 text-center text-xs font-bold text-indigo-700 uppercase tracking-wider">Total</th>`;
+            // Total Column Header
+            tableHtml += `<th scope="col" class="px-6 py-3 text-left text-xs font-bold text-indigo-600 uppercase tracking-wider">Total</th>`;
             tableHtml += `</tr></thead><tbody class="bg-white divide-y divide-slate-200">`;
 
             members.forEach(member => {
-                tableHtml += `<tr class="hover:bg-slate-50 transition-colors"><td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 border-r border-slate-200">${member.name}</td>`;
-                let memberTotal = 0;
+                tableHtml += `<tr><td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">${member.name}</td>`;
                 categoriesWithCount.forEach(cat => {
-                    const count = summary[member.name][cat] || 0;
-                    memberTotal += count;
-                    const countDisplay = count > 0 ? `<span class="font-semibold text-slate-800">${count}</span>` : `<span class="text-slate-300">-</span>`;
-                    tableHtml += `<td class="px-3 py-4 whitespace-nowrap text-sm text-center border-r border-slate-200">${countDisplay}</td>`;
+                    tableHtml += `<td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">${summary[member.name][cat] || 0}</td>`;
                 });
-                tableHtml += `<td class="px-4 py-4 whitespace-nowrap text-sm text-center font-bold text-indigo-600 bg-indigo-50/30">${memberTotal}</td>`;
+                // Total Column Data
+                tableHtml += `<td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-indigo-600">${summary[member.name]['Total'] || 0}</td>`;
                 tableHtml += `</tr>`;
             });
 
@@ -2134,14 +2120,16 @@
 
             const days = Array.from({ length: 7 }, (_, i) => new Date(weekStartDate.getFullYear(), weekStartDate.getMonth(), weekStartDate.getDate() + i));
             
+            // Structure: { MemberName: { DateString: { p5050: number, p5051: number, p5053: number } } }
             const utilization = {};
             members.forEach(m => utilization[m.name] = {});
 
+            // Use Allocations Collection instead of tasks
             allAllocations.forEach(alloc => {
                 if (utilization[alloc.userId]) {
                     utilization[alloc.userId][alloc.date] = { 
                         p5050: alloc.p5050 || 0, 
-                        p5051: alloc.p5051 || 0, 
+                        p5051: alloc.p5051 || 0, // Added 5051 support
                         p5053: alloc.p5053 || 0 
                     };
                 }
@@ -2163,6 +2151,7 @@
                 days.forEach(day => {
                     const dayString = formatDate(day);
                     
+                    // Check for leave
                     const leave = allLeaves.find(l => l.userId === member.name && dayString >= l.startDate && dayString <= l.endDate);
                     
                     let cellContent = '';
@@ -2174,12 +2163,12 @@
                         
                         if (dayData) {
                             const hrs5050 = (dayData.p5050 / 100) * 8.5;
-                            const hrs5051 = (dayData.p5051 / 100) * 8.5; 
+                            const hrs5051 = (dayData.p5051 / 100) * 8.5;
                             const hrs5053 = (dayData.p5053 / 100) * 8.5;
                             const totalHours = hrs5050 + hrs5051 + hrs5053; 
 
                             if (hrs5050 > 0) cellContent += `<div class="text-xs text-teal-600 font-semibold">5050: ${hrs5050.toFixed(1)}h</div>`;
-                            if (hrs5051 > 0) cellContent += `<div class="text-xs text-blue-600 font-semibold">5051: ${hrs5051.toFixed(1)}h</div>`; 
+                            if (hrs5051 > 0) cellContent += `<div class="text-xs text-blue-600 font-semibold">5051: ${hrs5051.toFixed(1)}h</div>`;
                             if (hrs5053 > 0) cellContent += `<div class="text-xs text-purple-600 font-semibold">5053: ${hrs5053.toFixed(1)}h</div>`;
                             
                             if (totalHours > 0) {
@@ -2191,7 +2180,6 @@
                             cellContent = `<span class="text-xs text-slate-300">-</span>`;
                         }
                     }
-                    
                     tableHtml += `<td class="px-2 py-2 text-center align-top border-r border-slate-200 h-24">${cellContent}</td>`;
                 });
                 tableHtml += `</tr>`;
@@ -2204,21 +2192,24 @@
         function exportUtilizedHoursToExcel() {
             const days = Array.from({ length: 7 }, (_, i) => new Date(currentWeekStartDate.getFullYear(), currentWeekStartDate.getMonth(), currentWeekStartDate.getDate() + i));
             
+            // Build structure similar to render
             const utilization = {};
             teamMembers.forEach(m => utilization[m.name] = {});
             allAllocations.forEach(alloc => {
                 if (utilization[alloc.userId]) {
                     utilization[alloc.userId][alloc.date] = { 
                         p5050: alloc.p5050 || 0, 
-                        p5051: alloc.p5051 || 0, 
+                        p5051: alloc.p5051 || 0, // Ensure 5051 works in export
                         p5053: alloc.p5053 || 0 
                     };
                 }
             });
 
+            // Headers
             const header = ["Team Member"];
             days.forEach(day => header.push(`${day.toLocaleDateString('en-US', { weekday: 'short' })} ${day.getDate()}`));
 
+            // Data
             const data = teamMembers.map(member => {
                 const row = [member.name];
                 days.forEach(day => {
@@ -2250,11 +2241,13 @@
             });
 
             const cw = getWeekNumber(currentWeekStartDate);
+            // Title Row
             const titleRow = [`Weekly Utilized Hours - CW${cw} (${days[0].toLocaleDateString()} - ${days[6].toLocaleDateString()})`];
             
+            // combine
             const wsData = [titleRow, [], header, ...data];
             const ws = XLSX.utils.aoa_to_sheet(wsData);
-            ws['!cols'] = [{ wch: 20 }, ...Array(7).fill({ wch: 20 })]; 
+            ws['!cols'] = [{ wch: 20 }, ...Array(7).fill({ wch: 20 })]; // Column widths
 
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Utilized Hours");
@@ -2264,7 +2257,7 @@
         // --- Metrics Logic ---
         function loadMetrics() {
              if (metricsUnsubscribe) metricsUnsubscribe();
-            const q = query(getMetricsCollection(), orderBy("engineer")); 
+            const q = query(getMetricsCollection(), orderBy("engineer")); // Ordered by engineer for grouping
             metricsUnsubscribe = onSnapshot(q, (snapshot) => {
                 allMetrics = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 renderMetricsTable();
@@ -2359,7 +2352,7 @@
                 reviewed: reviewed,
                 proposed: proposed,
                 draft: draft,
-                totalTestCases: total, 
+                totalTestCases: total, // Storing for easier sorting/filtering later if needed
                 gapReason: document.getElementById('metricGapReason').value,
                 fullyAutomated: fully,
                 semiAutomated: parseInt(document.getElementById('metricSemi').value) || 0,
@@ -2398,7 +2391,8 @@
                 tr.className = 'hover:bg-slate-50 border-b border-slate-200';
                 tr.dataset.id = metric.id;
                 
-                const total = metric.totalTestCases > 0 ? metric.totalTestCases : 1; 
+                // Calculate individual percentages
+                const total = metric.totalTestCases > 0 ? metric.totalTestCases : 1; // Prevent division by zero
                 const pctFully = ((metric.fullyAutomated || 0) / total * 100).toFixed(1) + '%';
                 const pctSemi = ((metric.semiAutomated || 0) / total * 100).toFixed(1) + '%';
                 const pctCan = ((metric.canBeAutomated || 0) / total * 100).toFixed(1) + '%';
@@ -2451,6 +2445,7 @@
             if (!row) return;
             const metricId = row.dataset.id;
             
+            // Protected action check using existing function
              performProtectedTaskAction(async () => {
                 if (action === 'edit-metric') {
                     const metric = allMetrics.find(m => m.id === metricId);
@@ -2470,11 +2465,12 @@
         function exportMetricsToExcel() {
              if (allMetrics.length === 0) return showAlert("No Data", "No metrics to export.");
 
+             // Create header rows matching the UI table
              const header1 = [
                 "Test Engineer", "Features", "Test Suite ID", 
                 "Total Test Cases", "", "", "", 
                 "Comments", 
-                "Automation status", "", "", "", "", "", "", "", "", 
+                "Automation status", "", "", "", "", "", "", "", "", // Added colspan placeholders
                 "Comments"
              ];
              const header2 = [
@@ -2520,15 +2516,15 @@
              const ws = XLSX.utils.aoa_to_sheet(ws_data);
 
              ws['!merges'] = [
-                { s: { r: 0, c: 0 }, e: { r: 2, c: 0 } }, 
-                { s: { r: 0, c: 1 }, e: { r: 2, c: 1 } }, 
-                { s: { r: 0, c: 2 }, e: { r: 2, c: 2 } }, 
-                { s: { r: 0, c: 3 }, e: { r: 0, c: 6 } }, 
-                { s: { r: 1, c: 3 }, e: { r: 1, c: 6 } }, 
-                { s: { r: 0, c: 7 }, e: { r: 2, c: 7 } }, 
-                { s: { r: 0, c: 8 }, e: { r: 0, c: 16 } }, 
-                { s: { r: 1, c: 8 }, e: { r: 1, c: 16 } }, 
-                { s: { r: 0, c: 17 }, e: { r: 2, c: 17 } }, 
+                { s: { r: 0, c: 0 }, e: { r: 2, c: 0 } }, // Engineer
+                { s: { r: 0, c: 1 }, e: { r: 2, c: 1 } }, // Features
+                { s: { r: 0, c: 2 }, e: { r: 2, c: 2 } }, // Suite ID
+                { s: { r: 0, c: 3 }, e: { r: 0, c: 6 } }, // Total TC Top
+                { s: { r: 1, c: 3 }, e: { r: 1, c: 6 } }, // Total TC Sub
+                { s: { r: 0, c: 7 }, e: { r: 2, c: 7 } }, // Comments Gap
+                { s: { r: 0, c: 8 }, e: { r: 0, c: 16 } }, // Auto Status Top
+                { s: { r: 1, c: 8 }, e: { r: 1, c: 16 } }, // Auto Status Mid
+                { s: { r: 0, c: 17 }, e: { r: 2, c: 17 } }, // Comments Auto
              ];
              
              ws['!cols'] = [
@@ -2551,6 +2547,7 @@
                 categoriesWithCount.forEach(cat => {
                     summary[member.name][cat] = 0;
                 });
+                summary[member.name]['Total'] = 0;
             });
 
             weeklyTasks.forEach(task => {
@@ -2558,6 +2555,7 @@
                     const count = parseInt(task.count, 10) || 0;
                     if (summary[task.assignee]) {
                         summary[task.assignee][task.category] += count;
+                        summary[task.assignee]['Total'] += count;
                     }
                 }
             });
@@ -2569,13 +2567,10 @@
 
             const dataForSheet = teamMembers.map(member => {
                 const row = { "Team Member": member.name };
-                let total = 0;
                 categoriesWithCount.forEach(cat => {
-                    const count = summary[member.name][cat] || 0;
-                    row[cat.replace(/_/g, ' ')] = count;
-                    total += count;
+                    row[cat.replace(/_/g, ' ')] = summary[member.name][cat] || 0;
                 });
-                row["Total"] = total;
+                row['Total'] = summary[member.name]['Total'] || 0; // Add Total to Excel
                 return row;
             });
 
@@ -2590,6 +2585,7 @@
             XLSX.writeFile(wb, `Weekly_Count_Summary_CW${weekNum}.xlsx`);
         }
 
+
         function exportToExcel() {
             if (weeklyTasks.length === 0 && allLeaves.length === 0) return showAlert("No Data", "No tasks or leaves to export.");
             
@@ -2601,7 +2597,7 @@
             
             const data = [];
             assignees.forEach(assignee => {
-                if (hiddenAssignees.has(assignee)) return; 
+                if (hiddenAssignees.has(assignee)) return; // Skip hidden assignees
 
                 const tasksForAssignee = weeklyTasks.filter(t => t.assignee === assignee);
                 const row = [assignee];
@@ -2637,10 +2633,12 @@
             const daysInMonth = new Date(year, month + 1, 0).getDate();
             const monthName = currentCalendarDate.toLocaleString('default', { month: 'long' });
 
+            // Initialize Worksheet
             const ws = {};
             const merges = [];
-            const colWidths = [{ wch: 25 }]; 
+            const colWidths = [{ wch: 25 }]; // Team Member col
 
+            // Helper to add cell
             function addCell(r, c, val, style = {}) {
                 const ref = XLSX.utils.encode_cell({r, c});
                 ws[ref] = { t: 's', v: val, s: style };
@@ -2648,7 +2646,7 @@
 
             // --- Row 0: Title ---
             addCell(0, 0, `Leave Report - ${monthName} ${year}`, { font: { bold: true, sz: 14 } });
-            merges.push({ s: { r: 0, c: 0 }, e: { r: 0, c: daysInMonth } }); 
+            merges.push({ s: { r: 0, c: 0 }, e: { r: 0, c: daysInMonth } }); // Merge title across
 
             // --- Row 1: CW Header ---
             addCell(1, 0, "CW", { font: { bold: true }, alignment: { horizontal: "center" }, fill: { fgColor: { rgb: "E2E8F0" } } });
@@ -2659,6 +2657,7 @@
                 const d = new Date(year, month, i);
                 const cw = getWeekNumber(d);
                 const colIdx = i;
+
                 const cwStyle = { font: { bold: true }, alignment: { horizontal: "center" }, fill: { fgColor: { rgb: "E2E8F0" } } };
 
                 if (cw !== currentCW) {
@@ -2688,7 +2687,7 @@
                 
                 let style = { font: { bold: true }, alignment: { horizontal: "center" }, border: { bottom: { style: "thin" } } };
                 if (isWeekend) {
-                    style.fill = { fgColor: { rgb: "F1F5F9" } }; 
+                    style.fill = { fgColor: { rgb: "F1F5F9" } }; // Light grey
                 }
                 
                 addCell(2, i, `${i} (${dayName})`, style);
@@ -2714,8 +2713,8 @@
                 
                 if (activeReleases.length > 0) {
                     val = activeReleases.map(r => r.name).join(', ');
-                    style.fill = { fgColor: { rgb: "FFE4E6" } }; 
-                    style.font = { color: { rgb: "9F1239" } }; 
+                    style.fill = { fgColor: { rgb: "FFE4E6" } }; // Rose 100
+                    style.font = { color: { rgb: "9F1239" } }; // Rose 800
                 }
                 
                 if (!val && (currentDate.getDay() === 0 || currentDate.getDay() === 6)) {
@@ -2764,14 +2763,14 @@
                         }
 
                         if (leaveToDisplay.reason === 'MEP_holiday') {
-                            style.fill = { fgColor: { rgb: "F3E8FF" } }; 
-                            style.font = { color: { rgb: "6B21A8" } }; 
+                            style.fill = { fgColor: { rgb: "F3E8FF" } }; // Purple 100
+                            style.font = { color: { rgb: "6B21A8" } }; // Purple 800
                         } else if (status === 'Approved') {
-                            style.fill = { fgColor: { rgb: "15803D" } }; 
-                            style.font = { color: { rgb: "FFFFFF" } }; 
+                            style.fill = { fgColor: { rgb: "15803D" } }; // Green 700
+                            style.font = { color: { rgb: "FFFFFF" } }; // White
                         } else {
-                            style.fill = { fgColor: { rgb: "DBEAFE" } }; 
-                            style.font = { color: { rgb: "1E40AF" } }; 
+                            style.fill = { fgColor: { rgb: "DBEAFE" } }; // Blue 100
+                            style.font = { color: { rgb: "1E40AF" } }; // Blue 800
                         }
                     } else if (isWeekend) {
                          style.fill = { fgColor: { rgb: "F1F5F9" } };
@@ -2782,6 +2781,7 @@
                 currentRow++;
             });
 
+            // Finalize
             const range = { s: { r: 0, c: 0 }, e: { r: currentRow - 1, c: daysInMonth } };
             ws['!ref'] = XLSX.utils.encode_range(range);
             ws['!merges'] = merges;
@@ -2797,7 +2797,6 @@
             document.getElementById('alertMessage').textContent = message; 
             openModal('alert'); 
         }
-
     </script>
 </body>
 </html>
