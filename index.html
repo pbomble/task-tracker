@@ -51,7 +51,7 @@
         /* --- Excel-style inline task table --- */
         #etTable {
             border-collapse: collapse;
-            min-width: 2500px; /* Increased to accommodate wider dropdowns */
+            min-width: max-content; /* Dynamically adjusts to content */
             font-size: 0.8rem;
         }
         #etTable th, #etTable td {
@@ -105,13 +105,16 @@
             background-repeat: no-repeat;
             background-position: right 2px top 50%;
             background-size: 8px auto;
+            text-overflow: ellipsis; /* Keeps long names contained */
+            white-space: nowrap;
+            overflow: hidden;
         }
 
-        .et-col-c { width: 140px; } /* Wider for full category names */
+        .et-col-c { width: 120px; max-width: 140px; } 
         .et-col-ct { width: 36px; text-align: center; color: #475569; }
-        .et-col-task { min-width: 140px; }
-        .et-col-s { width: 100px; } /* Wider for full status names */
-        .et-col-p { min-width: 110px; color: #475569; }
+        .et-col-task { min-width: 120px; width: auto; }
+        .et-col-s { width: 100px; max-width: 110px; }
+        .et-col-p { min-width: 90px; width: auto; color: #475569; }
         .et-leave-cell { background-color: #fef3c7; text-align: center; font-weight: 600; color: #92400e; padding: 6px; }
         
         .et-add-row-btn { font-size: 0.65rem; color: #6366f1; cursor: pointer; padding: 2px 6px; display: block; width: 100%; text-align: left;}
@@ -580,15 +583,15 @@
                 <input type="hidden" id="allocDate">
                 <input type="hidden" id="allocUser">
                 <div class="mb-4">
-                    <label for="alloc5050" class="block text-slate-600 text-sm font-bold mb-2 text-teal-600">Project 5050 (%)</label>
+                    <label for="alloc5050" class="block text-slate-600 text-sm font-bold mb-2 text-teal-600">MIK_L2H5050 (%)</label>
                     <input type="number" id="alloc5050" min="0" max="100" class="shadow-sm appearance-none border border-slate-300 rounded-lg w-full py-2 px-3 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="0">
                 </div>
                 <div class="mb-4">
-                    <label for="alloc5051" class="block text-slate-600 text-sm font-bold mb-2 text-blue-600">Project 5051 (%)</label>
+                    <label for="alloc5051" class="block text-slate-600 text-sm font-bold mb-2 text-blue-600">MQB27_L2H5051 (%)</label>
                     <input type="number" id="alloc5051" min="0" max="100" class="shadow-sm appearance-none border border-slate-300 rounded-lg w-full py-2 px-3 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="0">
                 </div>
                 <div class="mb-6">
-                    <label for="alloc5053" class="block text-slate-600 text-sm font-bold mb-2 text-purple-600">Project 5053 (%)</label>
+                    <label for="alloc5053" class="block text-slate-600 text-sm font-bold mb-2 text-purple-600">E31.2_L2H5053 (%)</label>
                     <input type="number" id="alloc5053" min="0" max="100" class="shadow-sm appearance-none border border-slate-300 rounded-lg w-full py-2 px-3 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="0">
                 </div>
                 <div class="flex items-center justify-end space-x-3">
@@ -1165,7 +1168,7 @@
             });
             headHtml += `</tr><tr>`;
             days.forEach(() => {
-                headHtml += `<th class="et-col-c" title="Category">Category</th><th class="et-col-ct" title="Count">CT</th><th class="et-col-task">Task</th><th class="et-col-s" title="Status">Status</th><th class="et-col-p">Project,%,Hrs</th>`;
+                headHtml += `<th class="et-col-c" title="Category">Category</th><th class="et-col-ct" title="Count">CT</th><th class="et-col-task">Task</th><th class="et-col-s" title="Status">Status</th><th class="et-col-p">Project</th>`;
             });
             headHtml += `</tr></thead><tbody>`;
 
@@ -1185,17 +1188,24 @@
                 maxRows += (etExtraRows[assignee] || 0);
                 if (isHidden) maxRows = 1;
 
+                const displayRows = isHidden ? 1 : maxRows + 1; // +1 for the effort allocation row
+
                 for (let rowIdx = 0; rowIdx < maxRows; rowIdx++) {
                     bodyHtml += `<tr data-global-row="${globalRowIdx}">`;
                     if (rowIdx === 0) {
-                        bodyHtml += `<td rowspan="${maxRows}" class="et-assignee-col">
+                        bodyHtml += `<td rowspan="${displayRows}" class="et-assignee-col">
                             <div class="flex items-center justify-between">
                                 <span>${assignee}</span>
                                 <button data-action="toggle-visibility" data-assignee="${assignee}" class="text-slate-400 hover:text-indigo-600 px-1 border-none bg-transparent">
                                     <i class="fas ${isHidden ? 'fa-eye' : 'fa-eye-slash'} pointer-events-none text-xs"></i>
                                 </button>
                             </div>
-                            ${!isHidden ? `<button type="button" class="et-add-row-btn bg-transparent border-none p-0 text-left w-full block mt-1" data-action="add-row" data-assignee="${assignee}"><i class="fas fa-plus pointer-events-none"></i> row</button>` : ''}
+                            ${!isHidden ? `
+                            <div class="flex justify-between mt-2 space-x-1">
+                                <button type="button" class="et-add-row-btn flex-1 text-center bg-transparent border-none p-1 text-indigo-500 hover:bg-slate-100 rounded" data-action="add-row" data-assignee="${assignee}"><i class="fas fa-plus pointer-events-none"></i> row</button>
+                                <button type="button" class="et-add-row-btn flex-1 text-center bg-transparent border-none p-1 text-red-500 hover:bg-slate-100 rounded" data-action="remove-row" data-assignee="${assignee}"><i class="fas fa-minus pointer-events-none"></i> row</button>
+                            </div>
+                            ` : ''}
                         </td>`;
                     }
 
@@ -1212,7 +1222,7 @@
 
                         if (leaveForDay) {
                             if (rowIdx === 0) {
-                                bodyHtml += `<td colspan="5" rowspan="${maxRows}" class="et-leave-cell"><i class="fas fa-user-clock mr-1"></i>${leaveForDay.reason}</td>`;
+                                bodyHtml += `<td colspan="5" rowspan="${displayRows}" class="et-leave-cell"><i class="fas fa-user-clock mr-1"></i>${leaveForDay.reason}</td>`;
                             }
                             return;
                         }
@@ -1258,6 +1268,34 @@
                     bodyHtml += `</tr>`;
                     globalRowIdx++;
                 }
+
+                if (!isHidden) {
+                    bodyHtml += `<tr class="bg-indigo-50/30" data-global-row="${globalRowIdx}">`;
+                    days.forEach((day, dIdx) => {
+                        const dayString = dayStrings[dIdx];
+                        const leaveForDay = (leaves || []).find(l => l.userId === assignee && new Date(l.startDate.replace(/-/g,'\/')) <= day && day <= new Date(l.endDate.replace(/-/g,'\/')));
+
+                        if (leaveForDay) return; // Leave cell already extends natively over this row
+
+                        const alloc = allAllocations.find(a => a.userId === assignee && a.date === dayString);
+                        let content = '<span class="text-indigo-400 font-medium italic text-[0.7rem] hover:underline"><i class="fas fa-plus mr-1"></i>Add Effort %</span>';
+                        
+                        if (alloc) {
+                            let parts = [];
+                            if (alloc.p5050) parts.push(`MIK_L2H5050=${alloc.p5050}%(${parseFloat((8.5 * alloc.p5050 / 100).toFixed(2))}h)`);
+                            if (alloc.p5053) parts.push(`E31.2_L2H5053=${alloc.p5053}%(${parseFloat((8.5 * alloc.p5053 / 100).toFixed(2))}h)`);
+                            if (alloc.p5051) parts.push(`MQB27_L2H5051=${alloc.p5051}%(${parseFloat((8.5 * alloc.p5051 / 100).toFixed(2))}h)`);
+                            
+                            if (parts.length > 0) {
+                                content = `<div class="font-bold text-[0.7rem] text-indigo-700 leading-tight">Effort % : <span class="font-semibold text-slate-700">${parts.join(' , ')}</span></div>`;
+                            }
+                        }
+                        bodyHtml += `<td colspan="5" class="text-center py-1 px-2 cursor-pointer border border-slate-200 hover:bg-indigo-100 transition-colors" data-action="edit-allocation" data-user="${assignee}" data-date="${dayString}">${content}</td>`;
+                    });
+                    bodyHtml += `</tr>`;
+                    globalRowIdx++;
+                }
+
             });
 
             taskGridEl.innerHTML = '';
@@ -1533,6 +1571,15 @@
                 const assignee = actionEl.dataset.assignee;
                 etExtraRows[assignee] = (etExtraRows[assignee] || 0) + 1;
                 renderTaskGrid(weeklyTasks, allLeaves, currentWeekStartDate);
+                return;
+            }
+
+            if (action === 'remove-row') {
+                const assignee = actionEl.dataset.assignee;
+                if (etExtraRows[assignee] && etExtraRows[assignee] > 0) {
+                    etExtraRows[assignee]--;
+                    renderTaskGrid(weeklyTasks, allLeaves, currentWeekStartDate);
+                }
                 return;
             }
             
@@ -2167,9 +2214,9 @@
                             const hrs5053 = (dayData.p5053 / 100) * 8.5;
                             const totalHours = hrs5050 + hrs5051 + hrs5053; 
 
-                            if (hrs5050 > 0) cellContent += `<div class="text-xs text-teal-600 font-semibold">5050: ${hrs5050.toFixed(1)}h</div>`;
-                            if (hrs5051 > 0) cellContent += `<div class="text-xs text-blue-600 font-semibold">5051: ${hrs5051.toFixed(1)}h</div>`;
-                            if (hrs5053 > 0) cellContent += `<div class="text-xs text-purple-600 font-semibold">5053: ${hrs5053.toFixed(1)}h</div>`;
+                            if (hrs5050 > 0) cellContent += `<div class="text-xs text-teal-600 font-semibold">MIK_L2H5050: ${hrs5050.toFixed(1)}h</div>`;
+                            if (hrs5051 > 0) cellContent += `<div class="text-xs text-blue-600 font-semibold">MQB27_L2H5051: ${hrs5051.toFixed(1)}h</div>`;
+                            if (hrs5053 > 0) cellContent += `<div class="text-xs text-purple-600 font-semibold">E31.2_L2H5053: ${hrs5053.toFixed(1)}h</div>`;
                             
                             if (totalHours > 0) {
                                 cellContent += `<div class="text-xs font-bold text-slate-800 border-t border-slate-100 mt-1 pt-1">Total: ${totalHours.toFixed(1)}h</div>`;
