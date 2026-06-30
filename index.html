@@ -1099,6 +1099,8 @@
             document.getElementById('weekRangeDisplay').textContent = rangeText;
             const utilizedDateRange = document.getElementById('utilizedHrsDateRange');
             if(utilizedDateRange) utilizedDateRange.textContent = rangeText;
+            const countDateRange = document.getElementById('weeklyCountDateRange');
+            if(countDateRange) countDateRange.textContent = rangeText;
 
             loadTasksForWeek(weekStart, weekEnd);
         }
@@ -1477,7 +1479,7 @@
                     return;
                 }
                 
-                if (!descVal) return; // need at least a task description before saving
+                // Allow saving if just count or category are present (removed requirement for task description)
 
                 const taskData = {
                     assignee, taskDate: date,
@@ -2098,20 +2100,26 @@
                 }
             });
 
-            let tableHtml = `<table class="min-w-full divide-y divide-slate-200">
+            let tableHtml = `<table class="min-w-full divide-y divide-slate-200 border border-slate-200">
                 <thead class="bg-slate-50">
                     <tr>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Team Member</th>`;
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider border-r border-slate-200">Team Member</th>`;
             categoriesWithCount.forEach(cat => {
-                tableHtml += `<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">${cat.replace(/_/g, ' ')}</th>`;
+                tableHtml += `<th scope="col" class="px-3 py-3 text-center text-xs font-bold text-slate-600 uppercase tracking-wider border-r border-slate-200">${cat.replace(/_/g, ' ')}</th>`;
             });
+            tableHtml += `<th scope="col" class="px-4 py-3 text-center text-xs font-bold text-indigo-700 uppercase tracking-wider">Total</th>`;
             tableHtml += `</tr></thead><tbody class="bg-white divide-y divide-slate-200">`;
 
             members.forEach(member => {
-                tableHtml += `<tr><td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">${member.name}</td>`;
+                tableHtml += `<tr class="hover:bg-slate-50 transition-colors"><td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 border-r border-slate-200">${member.name}</td>`;
+                let memberTotal = 0;
                 categoriesWithCount.forEach(cat => {
-                    tableHtml += `<td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">${summary[member.name][cat] || 0}</td>`;
+                    const count = summary[member.name][cat] || 0;
+                    memberTotal += count;
+                    const countDisplay = count > 0 ? `<span class="font-semibold text-slate-800">${count}</span>` : `<span class="text-slate-300">-</span>`;
+                    tableHtml += `<td class="px-3 py-4 whitespace-nowrap text-sm text-center border-r border-slate-200">${countDisplay}</td>`;
                 });
+                tableHtml += `<td class="px-4 py-4 whitespace-nowrap text-sm text-center font-bold text-indigo-600 bg-indigo-50/30">${memberTotal}</td>`;
                 tableHtml += `</tr>`;
             });
 
@@ -2561,14 +2569,18 @@
 
             const dataForSheet = teamMembers.map(member => {
                 const row = { "Team Member": member.name };
+                let total = 0;
                 categoriesWithCount.forEach(cat => {
-                    row[cat.replace(/_/g, ' ')] = summary[member.name][cat] || 0;
+                    const count = summary[member.name][cat] || 0;
+                    row[cat.replace(/_/g, ' ')] = count;
+                    total += count;
                 });
+                row["Total"] = total;
                 return row;
             });
 
             const ws = XLSX.utils.json_to_sheet(dataForSheet);
-            const colWidths = [{ wch: 25 }, ...categoriesWithCount.map(cat => ({ wch: cat.length + 5 }))];
+            const colWidths = [{ wch: 25 }, ...categoriesWithCount.map(cat => ({ wch: cat.length + 5 })), { wch: 10 }];
             ws['!cols'] = colWidths;
 
             const wb = XLSX.utils.book_new();
