@@ -51,11 +51,12 @@
         /* --- Excel-style inline task table --- */
         #etTable {
             border-collapse: collapse;
-            min-width: max-content; /* Dynamically adjusts to content */
-            font-size: 0.8rem;
+            width: 100%;
+            table-layout: auto;
+            font-size: 0.75rem; /* Slightly smaller for compact grid */
         }
         #etTable th, #etTable td {
-            border: 1px solid #e2e8f0;
+            border: 1px solid #cbd5e1;
         }
         #etTable thead th {
             position: sticky;
@@ -64,7 +65,8 @@
             background-color: #f1f5f9;
             font-weight: 700;
             color: #475569;
-            padding: 4px 6px;
+            padding: 4px;
+            line-height: 1.2;
         }
         .et-assignee-col {
             position: sticky;
@@ -72,20 +74,21 @@
             z-index: 12;
             background-color: #fff;
             font-weight: 600;
-            min-width: 120px;
-            padding: 4px 8px;
+            min-width: 110px;
+            padding: 4px;
             vertical-align: top;
         }
         thead .et-assignee-col { z-index: 13; background-color: #f1f5f9; }
         .et-cell {
-            padding: 3px 4px;
+            padding: 2px 4px; /* Minimized vertical padding */
             outline: none;
-            cursor: cell;
+            cursor: text; /* Text cursor for editable areas */
             min-width: 32px;
-            white-space: pre-wrap;
-            word-break: break-word;
+            white-space: pre-wrap; /* Honors line breaks but wraps at boundaries */
+            overflow-wrap: break-word; /* Force wraps long unbroken strings */
             vertical-align: top;
-            position: relative; /* For absolutely positioned dropdowns if needed */
+            position: relative;
+            line-height: 1.3; /* Tight line height */
         }
         .et-cell:focus-within { background-color: #eef2ff; box-shadow: inset 0 0 0 2px #6366f1; }
         .et-cell.et-selected { background-color: #dbeafe; }
@@ -93,35 +96,56 @@
         /* Dropdown styling inside cells */
         .et-dropdown {
             width: 100%;
-            height: 100%;
             border: none;
             background: transparent;
             outline: none;
             font-size: 0.75rem;
             cursor: pointer;
-            appearance: none; /* Hide default arrow to save space, relies on background */
-            padding-right: 12px;
+            appearance: none; 
+            padding: 0 12px 0 0; /* Removed vertical padding entirely */
+            margin: 0;
+            line-height: 1.3;
             background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394a3b8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
             background-repeat: no-repeat;
             background-position: right 2px top 50%;
             background-size: 8px auto;
-            text-overflow: ellipsis; /* Keeps long names contained */
+            text-overflow: ellipsis; 
             white-space: nowrap;
             overflow: hidden;
         }
 
-        .et-col-c { width: 120px; max-width: 140px; } 
-        .et-col-ct { width: 36px; text-align: center; color: #475569; }
-        .et-col-task { min-width: 120px; width: auto; }
-        .et-col-s { width: 100px; max-width: 110px; }
-        .et-col-p { min-width: 90px; width: auto; color: #475569; }
-        .et-leave-cell { background-color: #fef3c7; text-align: center; font-weight: 600; color: #92400e; padding: 6px; }
+        .et-col-c { min-width: 90px; width: auto; } 
+        .et-col-ct { min-width: 30px; width: auto; text-align: center; color: #475569; }
+        .et-col-task { min-width: 120px; width: auto; } /* Auto width for dynamic resizing */
+        .et-col-s { min-width: 80px; width: auto; }
+        .et-col-p { min-width: 90px; width: auto; }
+        .et-leave-cell { background-color: #fef3c7; text-align: center; font-weight: 600; color: #92400e; padding: 4px; }
         
-        .et-add-row-btn { font-size: 0.65rem; color: #6366f1; cursor: pointer; padding: 2px 6px; display: block; width: 100%; text-align: left;}
-        .et-add-row-btn:hover { text-decoration: underline; background: #f8fafc; border-radius: 4px;}
-        .et-weekend { background-color: #f8fafc; }
-        .task-card {
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        /* New Copy Button Styles */
+        .copy-cell-btn {
+            display: none;
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            padding: 2px 5px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            color: #64748b;
+            z-index: 20;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .et-cell:hover .copy-cell-btn {
+            display: block;
+        }
+        .copy-cell-btn:hover {
+            background: #f1f5f9;
+            color: #3b82f6;
+        }
+
+        .et-add-row-btn { font-size: 0.65rem; color: #6366f1; cursor: pointer; padding: 2px 4px; }
         }
         .task-card:hover {
             transform: translateY(-2px);
@@ -192,11 +216,15 @@
         <!-- Header -->
         <header class="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center">
             <div>
-                <h1 class="text-3xl font-bold text-slate-900">Unified Engineering Tracker</h1>
-                <p class="text-slate-500 mt-1">Your team's central hub for tasks, availability, and Windchill traceability.</p>
+                <h1 class="text-3xl font-bold text-slate-900">SynchroTrace</h1>
+                <h2 class="text-lg font-semibold text-indigo-600 mt-1">::Unified Team Operations & Traceability Suite::</h2>
+                <p class="text-slate-500 mt-1">- Your team's central hub for tasks, availability, and Windchill traceability.</p>
                 <p class="text-xs text-slate-300 mt-1 font-mono italic">-P.B</p>
             </div>
             <div class="mt-4 sm:mt-0 flex items-start space-x-4">
+                 <button id="manageProjectsBtn" class="bg-white text-slate-600 hover:bg-slate-50 font-semibold py-2 px-4 rounded-lg shadow-sm border border-slate-200 transition-colors">
+                    <i class="fas fa-briefcase mr-2"></i>Manage Projects <i class="fas fa-lock text-xs ml-1 text-slate-400"></i>
+                </button>
                  <button id="manageTeamBtn" class="bg-white text-slate-600 hover:bg-slate-50 font-semibold py-2 px-4 rounded-lg shadow-sm border border-slate-200 transition-colors">
                     <i class="fas fa-users mr-2"></i>Manage Team <i class="fas fa-lock text-xs ml-1 text-slate-400"></i>
                 </button>
@@ -251,9 +279,6 @@
                             <span><b class="text-indigo-600">CT</b>=Count</span>
                             <span><b class="text-indigo-600">S</b>=Status</span>
                         </div>
-                        <button id="addTaskBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg shadow-indigo-500/30 transition-transform transform hover:scale-105">
-                            <i class="fas fa-plus mr-2"></i>Detailed Add
-                        </button>
                     </div>
                 </div>
                 <div id="taskGridContainer" class="overflow-x-auto bg-white rounded-xl shadow-md">
@@ -264,7 +289,7 @@
                  <div id="no-tasks-message" class="hidden text-center py-20">
                     <i class="fas fa-folder-open text-5xl text-slate-300"></i>
                     <p class="mt-4 text-xl font-semibold text-slate-600">No tasks for this week.</p>
-                    <p class="text-sm text-slate-400">Click "Detailed Add" or type directly in the grid to get started!</p>
+                    <p class="text-sm text-slate-400">Type directly in the grid to get started!</p>
                 </div>
             </div>
 
@@ -505,73 +530,6 @@
     </div>
 
     <!-- Modals -->
-    <!-- Task Modal -->
-    <div id="taskModal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-xl shadow-2xl p-8 w-full max-w-lg m-4 transform transition-transform scale-95">
-            <h2 id="taskModalTitle" class="text-2xl font-bold mb-6 text-slate-800">Add New Task</h2>
-            <form id="taskForm">
-                <input type="hidden" id="taskId">
-                <div class="mb-5">
-                    <label for="taskDescription" class="block text-slate-600 text-sm font-bold mb-2">Task Description</label>
-                    <textarea id="taskDescription" rows="3" class="shadow-sm appearance-none border border-slate-300 rounded-lg w-full py-2 px-3 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
-                    <div>
-                        <label for="taskProject" class="block text-slate-600 text-sm font-bold mb-2">Project</label>
-                        <select id="taskProject" class="shadow-sm border border-slate-300 rounded-lg w-full py-2 px-3 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                            <option>5050_MIK</option>
-                            <option>5051_MQB27</option>
-                            <option>5053_E3_1.2</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label for="taskDate" class="block text-slate-600 text-sm font-bold mb-2">Date</label>
-                        <input type="date" id="taskDate" class="shadow-sm appearance-none border border-slate-300 rounded-lg w-full py-2 px-3 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
-                    </div>
-                </div>
-                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
-                    <div>
-                         <label for="taskCategory" class="block text-slate-600 text-sm font-bold mb-2">Category</label>
-                        <select id="taskCategory" class="shadow-sm border border-slate-300 rounded-lg w-full py-2 px-3 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                            <option>Task</option>
-                            <option>Meeting</option>
-                            <option>New TCs</option>
-                            <option>Rework TCs</option>
-                            <option>New Script/Automation</option>
-                            <option>Rework Script/Automation</option>
-                            <option>Automation_Dry_run</option>
-                            <option>Execution</option>
-                            <option>Req Analysis</option>
-                        </select>
-                    </div>
-                      <div id="taskCountContainer" class="hidden col-span-2 md:col-span-1">
-                        <label for="taskCount" class="block text-slate-600 text-sm font-bold mb-2">Count</label>
-                        <input type="number" id="taskCount" class="shadow-sm appearance-none border border-slate-300 rounded-lg w-full py-2 px-3 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    </div>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                    <div>
-                        <label for="taskAssignee" class="block text-slate-600 text-sm font-bold mb-2">Assign To</label>
-                        <select id="taskAssignee" class="shadow-sm appearance-none border border-slate-300 rounded-lg w-full py-2 px-3 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
-                            <!-- Options will be populated by JS -->
-                        </select>
-                    </div>
-                    <div>
-                        <label for="taskStatus" class="block text-slate-600 text-sm font-bold mb-2">Status</label>
-                        <select id="taskStatus" class="shadow-sm border border-slate-300 rounded-lg w-full py-2 px-3 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                            <option value="To Do">To Do</option>
-                            <option value="In Progress">In Progress</option>
-                            <option value="Done">Done</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="flex items-center justify-end space-x-3">
-                    <button type="button" id="cancelTask" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 px-4 rounded-lg transition-colors">Cancel</button>
-                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg shadow-indigo-500/30">Save Task</button>
-                </div>
-            </form>
-        </div>
-    </div>
     
     <!-- Daily Allocation Modal -->
     <div id="allocationModal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50 p-4">
@@ -728,6 +686,25 @@
         </div>
     </div>
 
+    <!-- Project Management Modal -->
+    <div id="projectModal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md m-4 transform transition-transform scale-95">
+            <h2 class="text-2xl font-bold mb-6 text-slate-800">Manage Projects</h2>
+            <div class="mb-4">
+                <form id="addProjectForm" class="flex space-x-2">
+                    <input type="text" id="newProjectName" placeholder="Enter new project name" class="flex-grow shadow-sm appearance-none border border-slate-300 rounded-lg w-full py-2 px-3 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow-md">Add</button>
+                </form>
+            </div>
+            <div id="projectList" class="space-y-2 max-h-60 overflow-y-auto pr-2">
+                <!-- Projects will be listed here -->
+            </div>
+            <div class="flex justify-end mt-6">
+                 <button type="button" id="closeProjectModal" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 px-4 rounded-lg transition-colors">Close</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Leave Modal -->
     <div id="leaveModal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50 p-4">
         <div class="bg-white rounded-xl shadow-2xl p-8 w-full max-w-lg m-4 transform transition-transform scale-95">
@@ -855,9 +832,13 @@
         let allReleases = [];
         let allMetrics = [];
         let allAllocations = []; // New
+        let projects = []; // New
+        let projectsUnsubscribe = null; // New
         let tasksUnlocked = false;
         let passwordPromiseResolve = null;
         let hiddenAssignees = new Set();
+        let isTableFocused = false; // Track focus to pause active live-rendering while typing
+        let pendingGridRender = false;
         const categoriesWithCount = ['New TCs', 'Rework TCs', 'New Script/Automation', 'Rework Script/Automation', 'Req Analysis', 'Automation_Dry_run', 'Execution'];
 
         // --- Excel-style grid definitions (Updated to full forms) ---
@@ -877,11 +858,36 @@
         let etSaveTimers = {}; // debounce timers keyed by "assignee|date|rowIdx"
         let pendingSaves = {}; // to prevent double-entry documents
         
+        // Helper to get persistent colors for projects
+        function getProjectColors(projectName) {
+            if (!projectName) return { bg: '', text: '' };
+            const name = projectName.toLowerCase();
+            if (name.includes('5050')) return { bg: 'bg-teal-100', text: 'text-teal-800' };
+            if (name.includes('5051')) return { bg: 'bg-blue-100', text: 'text-blue-800' };
+            if (name.includes('5053')) return { bg: 'bg-purple-100', text: 'text-purple-800' };
+            
+            // Dynamic fallback palette for custom projects
+            const palettes = [
+                { bg: 'bg-pink-100', text: 'text-pink-800' },
+                { bg: 'bg-indigo-100', text: 'text-indigo-800' },
+                { bg: 'bg-rose-100', text: 'text-rose-800' },
+                { bg: 'bg-cyan-100', text: 'text-cyan-800' },
+                { bg: 'bg-amber-100', text: 'text-amber-800' },
+                { bg: 'bg-emerald-100', text: 'text-emerald-800' }
+            ];
+            let hash = 0;
+            for (let i = 0; i < projectName.length; i++) {
+                hash = projectName.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            return palettes[Math.abs(hash) % palettes.length];
+        }
+
         // --- App Initialization ---
         document.addEventListener('DOMContentLoaded', () => {
             if (!db) return; 
             setupEventListeners();
             loadTeamMembers();
+            loadProjects();
             updateWeekView();
             loadLeaves();
             loadReleases(); 
@@ -897,39 +903,54 @@
         const getTeamCollection = () => collection(db, `apps/${appId}/team`);
         const getMetricsCollection = () => collection(db, `apps/${appId}/metrics`); 
         const getAllocationsCollection = () => collection(db, `apps/${appId}/allocations`); // New
+        const getProjectsCollection = () => collection(db, `apps/${appId}/projects`); // New
 
         // --- Event Listeners ---
         function setupEventListeners() {
             document.querySelectorAll('.tab-button').forEach(button => button.addEventListener('click', () => switchTab(button.dataset.tab)));
-            document.getElementById('addTaskBtn').addEventListener('click', () => performProtectedTaskAction(() => openTaskModal(null)));
             document.getElementById('addLeaveBtn').addEventListener('click', () => openLeaveModal(null));
             document.getElementById('addReleaseBtn').addEventListener('click', () => performProtectedTaskAction(() => openModal('release')));
             document.getElementById('manageTeamBtn').addEventListener('click', () => performProtectedTaskAction(() => openModal('team')));
-            document.getElementById('cancelTask').addEventListener('click', () => closeModal('task'));
+            document.getElementById('manageProjectsBtn').addEventListener('click', () => performProtectedTaskAction(() => openModal('project')));
             document.getElementById('cancelLeave').addEventListener('click', () => closeModal('leave'));
             document.getElementById('cancelRelease').addEventListener('click', () => closeModal('release'));
             document.getElementById('closeTeamModal').addEventListener('click', () => closeModal('team'));
+            document.getElementById('closeProjectModal').addEventListener('click', () => closeModal('project'));
             document.getElementById('alertOkBtn').addEventListener('click', () => closeModal('alert'));
-            document.getElementById('taskForm').addEventListener('submit', handleTaskFormSubmit);
             document.getElementById('leaveForm').addEventListener('submit', handleLeaveFormSubmit);
             document.getElementById('releaseForm').addEventListener('submit', handleReleaseFormSubmit);
             document.getElementById('addTeamMemberForm').addEventListener('submit', handleAddTeamMember);
             document.getElementById('teamMemberList').addEventListener('click', handleDeleteTeamMember);
+            document.getElementById('addProjectForm').addEventListener('submit', handleAddProject);
+            document.getElementById('projectList').addEventListener('click', handleDeleteProject);
             document.getElementById('prevWeekBtn').addEventListener('click', () => { currentWeekStartDate.setDate(currentWeekStartDate.getDate() - 7); updateWeekView(); });
             document.getElementById('nextWeekBtn').addEventListener('click', () => { currentWeekStartDate.setDate(currentWeekStartDate.getDate() + 7); updateWeekView(); });
             document.getElementById('prevMonthBtn').addEventListener('click', () => { currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1); renderCalendar(); });
             document.getElementById('nextMonthBtn').addEventListener('click', () => { currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1); renderCalendar(); });
-            taskGrid.addEventListener('click', handleTaskGridClick);
+            document.getElementById('taskGrid').addEventListener('click', handleTaskGridClick);
             document.getElementById('exportExcelBtn').addEventListener('click', exportToExcel);
             document.getElementById('exportLeavesBtn').addEventListener('click', exportLeavesToExcel);
             document.getElementById('exportCountBtn').addEventListener('click', exportCountDataToExcel);
             document.getElementById('leaveCalendar').addEventListener('click', handleCalendarClick);
             document.getElementById('clearAllLeavesBtn').addEventListener('click', handleClearAllLeaves);
-            document.getElementById('taskCategory').addEventListener('change', toggleTaskCount);
             document.getElementById('passwordForm').addEventListener('submit', handlePasswordSubmit);
             document.getElementById('cancelPassword').addEventListener('click', handlePasswordCancel);
             document.getElementById('leaveReason').addEventListener('change', toggleLeaveUserSelection);
             
+            // Track focus in the task grid to prevent disruptive UI re-renders while typing
+            const taskGridContainer = document.getElementById('taskGridContainer');
+            taskGridContainer.addEventListener('focusin', () => { isTableFocused = true; });
+            taskGridContainer.addEventListener('focusout', (e) => {
+                // If focus moves outside the table container, allow pending renders to execute
+                if (!e.relatedTarget || !taskGridContainer.contains(e.relatedTarget)) {
+                    isTableFocused = false;
+                    if (pendingGridRender) {
+                        renderTaskGrid(weeklyTasks, allLeaves, currentWeekStartDate);
+                        pendingGridRender = false;
+                    }
+                }
+            });
+
             // --- Metrics Event Listeners ---
             document.getElementById('addMetricBtn').addEventListener('click', () => openMetricsModal(null));
             document.getElementById('cancelMetric').addEventListener('click', () => closeModal('metrics'));
@@ -1109,15 +1130,6 @@
 
         // --- STREAMING_CHUNK:Task Data Loading & Grid Rendering... ---
         // --- Task Management ---
-        function toggleTaskCount() {
-            const category = document.getElementById('taskCategory').value;
-            const countContainer = document.getElementById('taskCountContainer');
-            if (categoriesWithCount.includes(category)) {
-                countContainer.classList.remove('hidden');
-            } else {
-                countContainer.classList.add('hidden');
-            }
-        }
 
         function loadTasksForWeek(startDate, endDate) {
             if (tasksUnsubscribe) tasksUnsubscribe();
@@ -1132,7 +1144,13 @@
                     return timeA - timeB;
                 });
 
-                renderTaskGrid(weeklyTasks, allLeaves, startDate);
+                // Defer grid rendering if the user is actively typing in a cell to prevent cursor wipe
+                if (!isTableFocused) {
+                    renderTaskGrid(weeklyTasks, allLeaves, startDate);
+                } else {
+                    pendingGridRender = true;
+                }
+
                 renderWeeklyCountData(weeklyTasks, teamMembers, startDate);
                 renderUtilizedHours(weeklyTasks, teamMembers, startDate); // Render new table
             }, (error) => { console.error("Error fetching tasks:", error); showAlert("Data Error", "Could not load tasks. Check your Firebase configuration and security rules."); });
@@ -1142,8 +1160,14 @@
         function renderTaskGrid(tasks, leaves, weekStartDate) {
             const taskGridEl = document.getElementById('taskGrid');
             const tasksByAssignee = tasks.reduce((acc, task) => { (acc[task.assignee || 'Unassigned'] = acc[task.assignee || 'Unassigned'] || []).push(task); return acc; }, {});
-            // Sort each assignee's day-tasks by creation time so row index stays stable across days
-            Object.values(tasksByAssignee).forEach(arr => arr.sort((a, b) => (a.createdAt||'').localeCompare(b.createdAt||'')));
+            // Sort each assignee's day-tasks by project first, then creation time so row index stays stable and grouped by project
+            Object.values(tasksByAssignee).forEach(arr => arr.sort((a, b) => {
+                const projA = (a.project || '').toLowerCase();
+                const projB = (b.project || '').toLowerCase();
+                if (projA < projB) return -1;
+                if (projA > projB) return 1;
+                return (a.createdAt||'').localeCompare(b.createdAt||'');
+            }));
             const assignees = [...new Set([...Object.keys(tasksByAssignee), ...teamMembers.map(m => m.name)])].sort();
 
             const container = document.getElementById('taskGridContainer');
@@ -1233,6 +1257,7 @@
                         
                         const catVal = task ? (task.category || '') : '';
                         const statusVal = task ? (task.status || '') : '';
+                        const projVal = task ? (task.project || '') : '';
 
                         // Helper to generate options for dropdowns
                         const generateOptions = (optionsArr, selectedVal) => {
@@ -1251,18 +1276,31 @@
                         </td>`;
                         
                         // Count Cell
-                        bodyHtml += `<td contenteditable="true" spellcheck="false" class="et-cell et-col-ct" data-col="ct" ${baseAttrs}>${task && task.count ? task.count : ''}</td>`;
+                        bodyHtml += `<td contenteditable="true" spellcheck="false" inputmode="numeric" class="et-cell et-col-ct" data-col="ct" ${baseAttrs}>${task && task.count ? task.count : ''}</td>`;
                         
                         // Task Description Cell
-                        bodyHtml += `<td contenteditable="true" spellcheck="false" class="et-cell et-col-task" data-col="task" ${baseAttrs}>${task ? (task.description||'') : ''}</td>`;
-                        
-                        // Status Dropdown Cell
-                        bodyHtml += `<td class="et-cell et-col-s" data-col="s" ${baseAttrs}>
-                            <select class="et-dropdown text-${statusVal === 'Done' ? 'green' : statusVal === 'In Progress' ? 'blue' : statusVal === 'To Do' ? 'orange' : 'slate'}-600 font-semibold">${generateOptions(STATUS_OPTIONS, statusVal)}</select>
+                        bodyHtml += `<td contenteditable="true" spellcheck="false" class="et-cell et-col-task" data-col="task" ${baseAttrs}>
+                            ${task ? (task.description||'') : ''}
+                            <button class="copy-cell-btn" data-action="copy-cell" title="Copy text" contenteditable="false"><i class="fas fa-copy pointer-events-none"></i></button>
                         </td>`;
                         
-                        // Project Cell
-                        bodyHtml += `<td contenteditable="true" spellcheck="false" class="et-cell et-col-p" data-col="p" ${baseAttrs}>${task ? (task.project||'') : ''}</td>`;
+                        // Status Dropdown Cell (Colorized)
+                        let sBg = '', sText = '';
+                        if (statusVal === 'Done') { sBg = 'bg-green-100'; sText = 'text-green-800'; }
+                        else if (statusVal === 'In Progress') { sBg = 'bg-yellow-100'; sText = 'text-yellow-800'; }
+                        else if (statusVal === 'To Do') { sBg = 'bg-orange-100'; sText = 'text-orange-800'; }
+                        
+                        bodyHtml += `<td class="et-cell et-col-s ${sBg} ${sText}" data-col="s" ${baseAttrs}>
+                            <select class="et-dropdown w-full h-full bg-transparent font-semibold ${sText}">${generateOptions(STATUS_OPTIONS, statusVal)}</select>
+                        </td>`;
+                        
+                        // Project Dropdown Cell
+                        const projectOptions = projects.map(p => p.name);
+                        const pColors = getProjectColors(projVal);
+                        
+                        bodyHtml += `<td class="et-cell et-col-p ${pColors.bg} ${pColors.text}" data-col="p" ${baseAttrs}>
+                            <select class="et-dropdown w-full h-full bg-transparent font-semibold ${pColors.text}">${generateOptions(projectOptions, projVal)}</select>
+                        </td>`;
                     });
 
                     bodyHtml += `</tr>`;
@@ -1359,7 +1397,35 @@
             tableEl.addEventListener('change', (e) => {
                 if(e.target.classList.contains('et-dropdown')) {
                     const td = e.target.closest('.et-cell');
-                    if (td) saveEtCellGroup(td);
+                    if (td) {
+                        // Apply immediate color styling for status change
+                        if (td.dataset.col === 's') {
+                            const val = e.target.value;
+                            // Clean old colors
+                            td.className = td.className.replace(/\bbg-\w+-100\b/g, '').replace(/\btext-\w+-800\b/g, '').trim();
+                            e.target.className = e.target.className.replace(/\btext-\w+-800\b/g, '').trim();
+                            
+                            // Apply new colors
+                            let sBg = '', sText = '';
+                            if (val === 'Done') { sBg = 'bg-green-100'; sText = 'text-green-800'; }
+                            else if (val === 'In Progress') { sBg = 'bg-yellow-100'; sText = 'text-yellow-800'; }
+                            else if (val === 'To Do') { sBg = 'bg-orange-100'; sText = 'text-orange-800'; }
+                            
+                            if (sBg) td.classList.add(sBg);
+                            if (sText) { td.classList.add(sText); e.target.classList.add(sText); }
+                        } else if (td.dataset.col === 'p') {
+                            const val = e.target.value;
+                            // Clean old colors
+                            td.className = td.className.replace(/\bbg-\w+-100\b/g, '').replace(/\btext-\w+-800\b/g, '').trim();
+                            e.target.className = e.target.className.replace(/\btext-\w+-800\b/g, '').trim();
+                            
+                            // Apply project specific colors
+                            const pColors = getProjectColors(val);
+                            if (pColors.bg) td.classList.add(pColors.bg);
+                            if (pColors.text) { td.classList.add(pColors.text); e.target.classList.add(pColors.text); }
+                        }
+                        saveEtCellGroup(td);
+                    }
                 }
             });
 
@@ -1373,6 +1439,19 @@
                 if (e.key === 'Enter') { e.preventDefault(); td.blur(); moveEtFocus(td, 1, 0); }
                 else if (e.key === 'Tab') { e.preventDefault(); td.blur(); moveEtFocus(td, 0, e.shiftKey ? -1 : 1); }
                 else if (e.key === 'Escape') { td.blur(); }
+            });
+
+            // Input listener to aggressively enforce numeric-only values on CT column
+            tableEl.addEventListener('input', (e) => {
+                const td = e.target.closest('.et-cell[data-col="ct"]');
+                if (td) {
+                    const text = td.textContent;
+                    const numericText = text.replace(/[^0-9]/g, '');
+                    if (text !== numericText) {
+                        td.textContent = numericText;
+                        placeCaretAtEnd(td); // Re-focus cursor at the end after stripping text
+                    }
+                }
             });
         }
 
@@ -1445,6 +1524,9 @@
                             // Find matching option (case insensitive if possible)
                             const matchedOpt = Array.from(select.options).find(opt => opt.value.toLowerCase() === val.toLowerCase());
                             if(matchedOpt) select.value = matchedOpt.value;
+                        } else if (td.dataset.col === 'ct') {
+                            // Force numeric validation on pasted content
+                            td.textContent = val.replace(/[^0-9]/g, '');
                         } else {
                             td.textContent = val;
                         }
@@ -1497,14 +1579,11 @@
                     }
                     return;
                 }
-                
-                // Allow save if either description OR count is provided (needed for counts-only tracking)
-                if (!descVal && !countVal) return; 
 
                 const taskData = {
                     assignee, taskDate: date,
-                    category: catCode || 'Task',
-                    status: statusCode || 'To Do',
+                    category: catCode || '', 
+                    status: statusCode || '', 
                     count: countVal || null,
                     description: descVal,
                     project: projVal || '',
@@ -1525,36 +1604,42 @@
                 }
             }, 400);
         }
-
-        async function handleTaskFormSubmit(e) {
-            e.preventDefault();
-            if (!currentUserId) return showAlert("Error", "Could not identify user.");
-            const taskId = document.getElementById('taskId').value;
-            const taskData = { 
-                description: document.getElementById('taskDescription').value, 
-                assignee: document.getElementById('taskAssignee').value, 
-                status: document.getElementById('taskStatus').value, 
-                taskDate: document.getElementById('taskDate').value, 
-                project: document.getElementById('taskProject').value,
-                category: document.getElementById('taskCategory').value, 
-                count: document.getElementById('taskCount').value || null,
-                updatedBy: currentUserId, 
-                updatedAt: new Date().toISOString() 
-            };
-            try {
-                if (taskId) await updateDoc(doc(getTasksCollection(), taskId), taskData);
-                else await addDoc(getTasksCollection(), { ...taskData, createdBy: currentUserId, createdAt: new Date().toISOString() });
-                closeModal('task');
-            } catch (error) { console.error("Error saving task:", error); showAlert("Save Error", "Failed to save the task. Check Firebase rules."); }
-        }
         
-        // --- STREAMING_CHUNK:Task Actions and Allocation Processing... ---
+        // --- Task Actions and Allocation Processing ---
         async function handleTaskGridClick(e) {
             // Broaden the selector to catch buttons, divs or other elements with data-action
             const actionEl = e.target.closest('[data-action]');
             if (!actionEl) return;
             
             const action = actionEl.dataset.action;
+
+            if (action === 'copy-cell') {
+                const td = actionEl.closest('.et-cell');
+                if (td) {
+                    // Clone node to safely remove the button's own text from the copy operation
+                    const clone = td.cloneNode(true);
+                    const btnToRemove = clone.querySelector('.copy-cell-btn');
+                    if(btnToRemove) btnToRemove.remove();
+                    
+                    const text = clone.textContent.trim();
+                    const textarea = document.createElement('textarea');
+                    textarea.value = text;
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+
+                    // Flash icon to checkmark
+                    const icon = actionEl.querySelector('i');
+                    icon.classList.replace('fa-copy', 'fa-check');
+                    icon.classList.add('text-green-600');
+                    setTimeout(() => {
+                        icon.classList.replace('fa-check', 'fa-copy');
+                        icon.classList.remove('text-green-600');
+                    }, 1500);
+                }
+                return;
+            }
 
             if (action === 'toggle-visibility') {
                 const assignee = actionEl.dataset.assignee;
@@ -1683,27 +1768,12 @@
             const q = query(getTeamCollection(), orderBy("name"));
             onSnapshot(q, (snapshot) => {
                 teamMembers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                populateAssigneeDropdown();
                 populateLeaveUserDropdown();
                 populateMetricEngineerDropdown();
                 renderTeamList();
                 renderWeeklyCountData(weeklyTasks, teamMembers, currentWeekStartDate);
                 renderUtilizedHours(weeklyTasks, teamMembers, currentWeekStartDate);
             });
-        }
-
-        function populateAssigneeDropdown() {
-            const assigneeSelect = document.getElementById('taskAssignee');
-            const currentVal = assigneeSelect.value;
-            assigneeSelect.innerHTML = '<option value="">Select Assignee</option>';
-            teamMembers.forEach(member => {
-                const option = document.createElement('option');
-                option.value = member.name;
-                option.textContent = member.name;
-                assigneeSelect.appendChild(option);
-            });
-            // Default to empty if currentVal is not in list
-            assigneeSelect.value = teamMembers.some(m => m.name === currentVal) ? currentVal : "";
         }
         
         function populateLeaveUserDropdown() {
@@ -1779,6 +1849,74 @@
             }
         }
         
+        // --- Project Management ---
+        function loadProjects() {
+            const q = query(getProjectsCollection(), orderBy("name"));
+            onSnapshot(q, (snapshot) => {
+                projects = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderProjectList();
+                if (document.getElementById('tasks-content').classList.contains('active')) {
+                    updateWeekView(); // Re-render task grid to update dropdowns and sorts
+                }
+            });
+        }
+
+        function renderProjectList() {
+            const listElement = document.getElementById('projectList');
+            listElement.innerHTML = '';
+            if (projects.length === 0) {
+                listElement.innerHTML = `<p class="text-slate-400 text-center text-sm">No projects added yet.</p>`;
+                return;
+            }
+            projects.forEach(proj => {
+                const projEl = document.createElement('div');
+                projEl.className = 'flex justify-between items-center bg-slate-50 p-2 rounded-lg';
+                projEl.dataset.id = proj.id;
+                projEl.innerHTML = `
+                    <span class="font-medium text-slate-700">${proj.name}</span>
+                    <button class="delete-project-btn text-red-400 hover:text-red-600 p-1">
+                        <i class="fas fa-trash-alt pointer-events-none"></i>
+                    </button>
+                `;
+                listElement.appendChild(projEl);
+            });
+        }
+
+        async function handleAddProject(e) {
+            e.preventDefault();
+            const nameInput = document.getElementById('newProjectName');
+            const newName = nameInput.value.trim();
+            if (newName) {
+                if (projects.find(p => p.name.toLowerCase() === newName.toLowerCase())) {
+                    showAlert("Duplicate", `Project "${newName}" already exists.`);
+                    return;
+                }
+                try {
+                    await addDoc(getProjectsCollection(), { name: newName });
+                    nameInput.value = '';
+                } catch (error) {
+                    console.error("Error adding project:", error);
+                    showAlert("Error", "Could not add project.");
+                }
+            }
+        }
+
+        async function handleDeleteProject(e) {
+            const deleteBtn = e.target.closest('.delete-project-btn');
+            if (!deleteBtn) return;
+            const projRow = deleteBtn.closest('[data-id]');
+            if (!projRow) return;
+            const projId = projRow.dataset.id;
+            if (confirm("Are you sure you want to remove this project?")) {
+                try {
+                    await deleteDoc(doc(getProjectsCollection(), projId));
+                } catch (error) {
+                    console.error("Error deleting project:", error);
+                    showAlert("Error", "Could not remove project.");
+                }
+            }
+        }
+
         // --- Leave Management & Other Utilities ---
         function loadLeaves() {
             if (leavesUnsubscribe) leavesUnsubscribe();
